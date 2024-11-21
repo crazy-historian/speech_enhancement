@@ -1,3 +1,5 @@
 torch
 torchaudio
 onnxruntime
+audiochains @ git+https://github.com/crazy-historian/audiochains.git
+silero_vad_simplified @ git+https://github.com/crazy-historian/silero-vad.git@refactoring
