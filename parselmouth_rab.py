@@ -10,10 +10,14 @@ from kiwisolver import strength
 audio_file = 'silero_vad/files/femalechist2.wav'
 praat_file = 'silero_vad/files/prfm2log.txt'
 threshold = 0.5
-blocksize = 1024
+blocksize = 512
 sampwidth = 2
-pitch_floor = 95
-pitch_ceiling = 600
+pitch_floor = 300
+pitch_ceiling = 1000
+
+
+
+print("Код выполняется!")
 
 times = []
 frequencies = []
@@ -57,14 +61,15 @@ with StreamFromFile(
 
             signal = stream.chain_of_methods(raw_data)
             sound = parselmouth.Sound(values=signal, sampling_frequency=stream.samplerate)
+            
 
             #pitch = sound.to_pitch_ac(pitch_floor=pitch_floor, pitch_ceiling=pitch_ceiling)
-            pitch = sound.to_pitch_cc(
+            pitch = sound.to_pitch_ac(
                 time_step=0.01,  # Временной шаг анализа
                 pitch_floor=pitch_floor,  # Нижняя граница частоты
                 pitch_ceiling=pitch_ceiling,  # Верхняя граница частоты
                 silence_threshold=0.4,  # Порог тишины
-                voicing_threshold=0.45,  # Порог озвучивания
+                voicing_threshold=0.4,  # Порог озвучивания
                 octave_cost=0.01,  # Цена отклонения на октаву
                 octave_jump_cost=0.35,  # Цена скачка на октаву
                 voiced_unvoiced_cost=0.14  # Цена перехода между "озвученным" и "неозвученным"
@@ -73,8 +78,8 @@ with StreamFromFile(
             frequency = pitch.selected_array['frequency']
             #frequency = frequency * 2
             frequency[frequency == 0] = np.nan
-            strength=pitch.selected_array['strength']
-            strength[strength == 0] = np.nan
+            #strength=pitch.selected_array['strength']
+            #strength[strength == 0] = np.nan
 
             times.extend(current_time + pitch.xs())
             frequencies.extend(frequency)
