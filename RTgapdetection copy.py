@@ -12,6 +12,14 @@ def threshold_filter(data, max_jump=50):
             if abs(filtered_data[i] - filtered_data[i - 1]) > max_jump:
                 filtered_data[i] = filtered_data[i - 1]
     return filtered_data
+# Функция скользящего среднего
+def moving_average(data, window_size=4):
+    smoothed = []
+    for i in range(len(data)):
+        window = data[max(0, i - window_size + 1):i + 1]  # Берем последние `window_size` блоков
+        valid_values = [x for x in window if not np.isnan(x)]  # Исключаем NaN
+        smoothed.append(np.nanmean(valid_values) if valid_values else np.nan)  # Если нет валидных значений, оставляем NaN
+    return np.array(smoothed)
 
 def process_audio(
     audio_file,
@@ -28,6 +36,7 @@ def process_audio(
     blocksize=1024,
     max_jump=50,
     blocks_to_silent=2
+    WINDOW_SIZE=4
 ):
     times = []  
     intensities = []  
@@ -71,8 +80,9 @@ def process_audio(
                 raise ValueError(f"Неизвестный метод: {method}. Используйте 'ac' или 'cc'.")
 
             pitch_values = pitch_obj.selected_array['frequency']
-            pitch_values[(pitch_values == 0) | (pitch_values > 300)] = np.nan
+            pitch_values[(pitch_values == 0) | (pitch_values > 500)] = np.nan
             avg_pitch = np.nanmean(pitch_values) if np.any(~np.isnan(pitch_values)) else np.nan
+            
             
             above_silence_threshold = avg_intensity > silence_threshold_db
             valid_pitch = avg_pitch > pitch_floor
@@ -89,19 +99,20 @@ def process_audio(
             intensities.append(avg_intensity)
             pitches.append(avg_pitch)
             activity_states.append(current_state)
+            smoothed_pitches = moving_average(pitches, WINDOW_SIZE)
 
             print(f"{current_time:.2f} s - {'Voiced (1)' if current_state else 'Silent (0)'} | "
-                  f"Intensity: {avg_intensity:.2f} dB | Pitch: {avg_pitch:.2f} Hz")
+                  f"Intensity: {avg_intensity:.2f} dB | Pitch: {smoothed_pitches:.2f} Hz")
             print(f"   Pitch values: {pitch_values}")  # Вывод всех значений pitch в блоке
             print(f"   Intensity values: {intensity_values}")  # Вывод всех значений интенсивности в блоке")
 
             current_time += blocksize / stream.samplerate
 
-    filtered_pitches = threshold_filter(pitches, max_jump=max_jump)
+    #filtered_pitches = threshold_filter(pitches, max_jump=max_jump)
 
-    print(f"Количество точек pitch: {len(filtered_pitches)}")
-    print(f"Минимальный pitch: {np.nanmin(filtered_pitches) if len(filtered_pitches) > 0 else 'Нет данных'}")
-    print(f"Максимальный pitch: {np.nanmax(filtered_pitches) if len(filtered_pitches) > 0 else 'Нет данных'}'")
+    print(f"Количество точек pitch: {len(smoothed_pitches)}")
+    print(f"Минимальный pitch: {np.nanmin(smoothed_pitches) if len(smoothed_pitches) > 0 else 'Нет данных'}")
+    print(f"Максимальный pitch: {np.nanmax(smoothed_pitches) if len(smoothed_pitches) > 0 else 'Нет данных'}'")
 
     fig, axes = plt.subplots(3, 1, figsize=(12, 8), sharex=True)
 
@@ -109,9 +120,9 @@ def process_audio(
     axes[0].set_ylabel("Интенсивность (дБ)")
     axes[0].set_title("Интенсивность звука")
 
-    if len(filtered_pitches) > 0 and np.any(~np.isnan(filtered_pitches)):
-        axes[1].plot(times, filtered_pitches, color="red")
-        axes[1].scatter(times, filtered_pitches, color="black", s=5)  
+    if len(smoothed_pitches) > 0 and np.any(~np.isnan(smoothed_pitches)):
+        axes[1].plot(times, smoothed_pitches, color="red")
+        axes[1].scatter(times, smoothed_pitches, color="black", s=5)  
         axes[1].set_ylabel("Частота (Гц)")
         axes[1].set_title("Частота основного тона")
     else:
@@ -127,7 +138,7 @@ def process_audio(
     plt.tight_layout()
     plt.show()
 
-    return times, filtered_pitches, activity_states
+    return times, pitches, activity_states
 
 process_audio(
     audio_file="silero_vad/files/testnaslogi2.wav",
@@ -144,4 +155,5 @@ process_audio(
     blocksize=1024,
     max_jump=20,
     blocks_to_silent=2
+    WINDOW_SIZE=4
 )

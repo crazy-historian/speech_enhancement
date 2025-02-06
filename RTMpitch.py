@@ -24,8 +24,8 @@ def moving_average(data, window_size=4):
 
 # Параметры обработки
 METHOD = "ac"
-PITCH_FLOOR = 100
-PITCH_CEILING = 600
+PITCH_FLOOR = 250
+PITCH_CEILING = 800
 TIME_STEP = 0.01
 SILENCE_THRESHOLD = 0.03
 VOICING_THRESHOLD = 0.45
@@ -34,7 +34,7 @@ OCTAVE_JUMP_COST = 0.35
 VOICED_UNVOICED_COST = 0.14
 BLOCKSIZE = 1024
 MAX_JUMP = 50
-WINDOW_SIZE = 4  # Размер окна для скользящего среднего
+WINDOW_SIZE = 2  # Размер окна для скользящего среднего
 
 # Создание графиков
 fig, ax = plt.subplots(figsize=(10, 5))
@@ -97,10 +97,10 @@ with InputStream(
         pitches.append(avg_pitch)
 
         # Фильтрация выбросов
-        filtered_pitches = threshold_filter(pitches, max_jump=MAX_JUMP)
+        #filtered_pitches = threshold_filter(pitches, max_jump=MAX_JUMP)
 
         # Применение скользящего среднего
-        smoothed_pitches = moving_average(filtered_pitches, WINDOW_SIZE)
+        smoothed_pitches = moving_average(pitches, WINDOW_SIZE)
 
         # Вывод в консоль
         print(f"{current_time:.2f} s | Pitch: {avg_pitch:.2f} Hz | Smoothed: {smoothed_pitches[-1]:.2f} Hz")
@@ -110,7 +110,7 @@ with InputStream(
         ax.set_xlabel("Время (с)")
         ax.set_ylabel("Частота (Гц)")
         ax.set_title("График основного тона (скользящее среднее)")
-        ax.set_ylim(50, 600)
+        ax.set_ylim(100, 900)
         ax.grid()
         ax.plot(times, smoothed_pitches, color="green", label="Pitch (скользящее среднее)")
         plt.legend()

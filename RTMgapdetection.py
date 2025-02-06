@@ -14,7 +14,7 @@ def threshold_filter(data, max_jump=50):
     return filtered_data
 
 # Параметры обработки
-METHOD = "ac"
+METHOD = "cc"
 PITCH_FLOOR = 100
 PITCH_CEILING = 600
 TIME_STEP = 0.01
@@ -109,7 +109,7 @@ with InputStream(
         activity_states.append(current_state)
 
         # Фильтрация выбросов
-        filtered_pitches = threshold_filter(pitches, max_jump=MAX_JUMP)
+        #filtered_pitches = threshold_filter(pitches, max_jump=MAX_JUMP)
 
         # Вывод в консоль
         print(f"{current_time:.2f} s - {'Voiced (1)' if current_state else 'Silent (0)'} | "
@@ -123,8 +123,8 @@ with InputStream(
         axes[0].set_ylim(0, 120)  
 
         axes[1].cla()
-        axes[1].plot(times, filtered_pitches, color="red")
-        axes[1].scatter(times, filtered_pitches, color="black", s=5)  
+        axes[1].plot(times, pitches, color="red")
+        axes[1].scatter(times, pitches, color="black", s=5)  
         axes[1].set_ylabel("Частота (Гц)")
         axes[1].set_title("Частота основного тона")
         axes[1].set_ylim(50, 600)  
@@ -137,6 +137,6 @@ with InputStream(
         axes[2].set_ylim(-0.5, 1.5)  
 
         plt.draw()  # Обновляем график
-        plt.pause(0.05)  # Обновляем с задержкой
+        plt.pause(0.01)  # Обновляем с задержкой
 
         current_time += BLOCKSIZE / stream.samplerate  
