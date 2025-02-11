@@ -24,8 +24,8 @@ def moving_average(data, window_size=4):
 
 # Параметры обработки
 METHOD = "ac"
-PITCH_FLOOR = 250
-PITCH_CEILING = 800
+PITCH_FLOOR = 100
+PITCH_CEILING = 600
 TIME_STEP = 0.01
 SILENCE_THRESHOLD = 0.03
 VOICING_THRESHOLD = 0.45
@@ -34,7 +34,7 @@ OCTAVE_JUMP_COST = 0.35
 VOICED_UNVOICED_COST = 0.14
 BLOCKSIZE = 1024
 MAX_JUMP = 50
-WINDOW_SIZE = 2  # Размер окна для скользящего среднего
+WINDOW_SIZE = 2 # Размер окна для скользящего среднего
 
 # Создание графиков
 fig, ax = plt.subplots(figsize=(10, 5))
