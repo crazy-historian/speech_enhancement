@@ -10,7 +10,10 @@ import numpy as np
 try:
     from pesq import pesq
 except ImportError:
+    print('pesq is not installed')
     pesq = None
+
+#from speechbrain.pretrained import SepformerEnhancement
 
 #########################################
 # Noise Generation Functions
@@ -93,6 +96,19 @@ class NoiseSuppressionModelWrapper:
             denoised_audio = self.model(noisy_audio)
         return denoised_audio
 
+class SpeechBrainWrapper:
+    def __init__(self, model):
+        self.model = model
+    def process(self, noisy_audio: torch.Tensor) -> torch.Tensor:
+        # SpeechBrain expects a batch of mono signals with shape (batch, samples)
+        # Remove the channel dimension (assuming mono)
+        noisy_audio_mono = noisy_audio.squeeze(1)
+        # enhance_batch returns a tensor of shape (batch, samples)
+        enhanced = self.model.enhance_batch(noisy_audio_mono)
+        # Add the channel dimension back
+        enhanced = enhanced.unsqueeze(1)
+        return enhanced
+        
 #########################################
 # Metrics Computation
 #########################################
@@ -192,8 +208,14 @@ def main():
         os.makedirs(args.output_folder)
     
     # Instantiate your noise suppression model (replace DummyDenoiser with your actual model)
-    model = DummyDenoiser()
-    wrapper = NoiseSuppressionModelWrapper(model)
+    #model = DummyDenoiser()
+    #wrapper = NoiseSuppressionModelWrapper(model)
+
+    model = SepformerEnhancement.from_hparams(
+            source="speechbrain/sepformer-dns4-16k-enhancement",
+            savedir=r"E:\mai\Diploma\speech_enhancement\2025\cache"
+        )
+    wrapper = SpeechBrainWrapper(model)
     
     # Get the list of clean audio files
     audio_files = glob.glob(os.path.join(args.clean_folder, '*.wav'))
@@ -215,6 +237,13 @@ def main():
         print("-" * 40)
 
 if __name__ == '__main__':
-    main()
+    from speechbrain.pretrained import SepformerSeparation
+    model = SepformerSeparation.from_hparams(
+    "speechbrain/sepformer-dns4-16k-enhancement",
+    savedir=r"e:\test"
+    )
+    print(model.separate_file(r"E:\mai\Diploma\speech_enhancement\2025\denoised_audio_samples\Noisy-_1__pink_snr10.0dB_denoised.wav"))
+    #exit()
+    #main()
 
 # e:/mai/Speech/.venv/Scripts/python.exe e:/mai/Speech/2025/pipe.py --clean_folder E:\mai\Speech\2025\clean_audio_samples --output_folder E:\mai\Speech\2025\denoised_audio_samples --noise_types white pink sine --snr_levels 5 10 15
