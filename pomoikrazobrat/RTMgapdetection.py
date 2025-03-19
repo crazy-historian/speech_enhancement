@@ -14,11 +14,11 @@ def threshold_filter(data, max_jump=50):
     return filtered_data
 
 # Параметры обработки
-METHOD = "cc"
+METHOD = "ac"
 PITCH_FLOOR = 100
 PITCH_CEILING = 600
 TIME_STEP = 0.01
-SILENCE_THRESHOLD_DB = -25.0
+SILENCE_THRESHOLD_DB = 40.0
 VOICING_THRESHOLD = 0.45
 OCTAVE_COST = 0.01
 OCTAVE_JUMP_COST = 0.35
