@@ -1,4 +1,3 @@
-
 import os
 import numpy as np
 import torch
@@ -9,6 +8,7 @@ import math
 import soundfile as sf
 import librosa
 from tabulate import tabulate
+
 # =======================
 # Интерфейс для шума
 # =======================
@@ -37,8 +37,8 @@ class UniformNoise(Noise):
 
 def apply_noises(audio: np.ndarray, sampling_rate: int, noises: list) -> np.ndarray:
     """
-    Применяет список шумов к аудио.
-    Можно применять по отдельности или комбинировать.
+    Применяет список шумов к аудио последовательно (для стандартных сценариев).
+    Для фоновых шумов используется отдельный класс.
     """
     noisy_audio = audio.copy()
     for noise in noises:
@@ -75,16 +75,6 @@ class BackgroundNoise(Noise):
             noise_used = np.resize(noise_resampled, target_len)
         return audio + self.gain * noise_used
 
-def apply_noises(audio: np.ndarray, sampling_rate: int, noises: list) -> np.ndarray:
-    """
-    Применяет список шумов к аудио последовательно (для стандартных сценариев).
-    Для фоновых шумов будет использоваться иной подход (см. ниже).
-    """
-    noisy_audio = audio.copy()
-    for noise in noises:
-        noisy_audio = noise.apply(noisy_audio, sampling_rate)
-    return noisy_audio
-
 # =======================
 # Функция загрузки фоновых шумов
 # =======================
@@ -103,6 +93,7 @@ def load_background_noises(base_folder: str) -> dict:
                 noise_objects = [BackgroundNoise(noise_file=file) for file in files]
                 background_scenarios[f"background_{folder}"] = noise_objects
     return background_scenarios
+
 # =======================
 # Интерфейс для метрик
 # =======================
@@ -124,8 +115,6 @@ class AudioMetrics:
     def compute_segmental_snr(self, clean: np.ndarray, processed: np.ndarray, frame_size: int = 400, overlap: int = 200) -> float:
         """
         Вычисляет сегментный SNR по окнам сигнала.
-        frame_size - размер окна,
-        overlap - перекрытие окон.
         """
         num_samples = len(clean)
         start = 0
@@ -188,7 +177,8 @@ class AudioMetrics:
             "Segmental_SNR": self.compute_segmental_snr(clean, processed),
             "LSD": self.compute_lsd(clean, processed),
             "MSE": self.compute_mse(clean, processed),
-            "MAE": self.compute_mae(clean, processed)
+            "MAE": self.compute_mae(clean, processed),
+            "Processed_sum": sum(processed),
         }
 
 # =======================
@@ -198,7 +188,6 @@ class DenoiseModel(nn.Module):
     def __init__(self):
         super(DenoiseModel, self).__init__()
         # Пример: простая заглушка без реальной обработки.
-        # Здесь можно разместить слои модели, например, сверточные слои или RNN.
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # В реальной модели здесь будет логика денойзинга.
@@ -209,49 +198,49 @@ class DenoiseModel(nn.Module):
         Унифицированный интерфейс для улучшения (удаления шумов) аудио.
         Принимает numpy-массив и возвращает обработанный сигнал.
         """
-        # Преобразуем в тензор
         audio_tensor = torch.from_numpy(audio).float().unsqueeze(0)  # [1, length]
-        # Пропускаем через модель (здесь это заглушка)
         with torch.no_grad():
             denoised_tensor = self.forward(audio_tensor)
-        # Возвращаем обратно в numpy (убираем batch dimension)
         return denoised_tensor.squeeze(0).numpy()
 
 # =======================
 # Пайплайн проверки модели
 # =======================
-def run_pipeline():
+def run_pipeline(only_background=False):
     # Загрузка датасета.
-    # В данном примере используется датасет с русской детской спонтанной речью.
     dataset = load_dataset("Nexdata/Russian_Children_Spontaneous_Speech_Data", 
-                           cache_dir="E:\\mai\\Diploma\\speech_enhancement\\DPipe\\cache")['train']
+                           cache_dir=r"E:\mai\Diploma\speech_enhancement\DPipe\cache")['train']
     print(f"Загружено {len(dataset)} примеров")
     
     # Инициализируем модель и метрики.
     model = DenoiseModel()
     metrics = AudioMetrics()
 
-    # Определяем стандартные шумы.
-    gaussian_noise = GaussianNoise(std=0.02)
-    uniform_noise = UniformNoise(low=-0.02, high=0.02)
-    noise_scenarios = {
-        "clean": [],
-        "gaussian": [gaussian_noise],
-        "uniform": [uniform_noise],
-        "combined": [gaussian_noise, uniform_noise]
-    }
-    
+    # Если запускаем только на background noise, то стандартные сценарии не используются.
+    if not only_background:
+        # Определяем стандартные шумы.
+        gaussian_noise = GaussianNoise(std=0.02)
+        uniform_noise = UniformNoise(low=-0.02, high=0.02)
+        noise_scenarios = {
+            "clean": [],
+            "gaussian": [gaussian_noise],
+            "uniform": [uniform_noise],
+            "combined": [gaussian_noise, uniform_noise]
+        }
+    else:
+        noise_scenarios = {}
+
     # Загружаем фоновые шумы из указанной папки.
     bg_folder = r"E:\mai\Diploma\speech_enhancement\DPipe\data\background_noise"
     bg_scenarios = load_background_noises(bg_folder)
-    # Добавляем фоновые шумы в общий словарь сценариев.
+    # Если запускаем только на background noise, то сценарии берём только из фоновых шумов.
     noise_scenarios.update(bg_scenarios)
     
     # Словари для сохранения итоговых метрик.
     baseline_results = {}
     improved_results = {}
     
-    # Для фоновых сценариев отдельно сохраним результаты для итоговой таблицы.
+    # Для фоновых сценариев отдельно сохраняем результаты для итоговой таблицы.
     background_results = {}
     
     # Проходим по каждому сценарию шума.
@@ -333,15 +322,6 @@ def run_pipeline():
         print(tabulate(final_table, headers=headers, tablefmt="grid"))
         
 if __name__ == '__main__':
-    run_pipeline()
-
-
-# бэнч 
-#- слова
-#- протяжные слоги
-#- не речевые
-
-from datasets import load_dataset
-
-#ds = load_dataset("Nexdata/Russian_Children_Spontaneous_Speech_Data", cache_dir="E:\mai\Diploma\speech_enhancement\DPipe\cache")
-#print(ds['train']['audio'])
+    # Для тестирования только на background noise передайте only_background=True
+    print("КАКАЯ метрика должна быть для онли бэкграунд? я добавил Processed_sum")
+    run_pipeline(only_background=True)
