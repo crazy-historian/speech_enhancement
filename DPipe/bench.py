@@ -3,19 +3,20 @@ import numpy as np
 import torch
 import torch.nn as nn
 from datasets import load_dataset
-from abc import ABC, abstractmethod
 import math
 import soundfile as sf
 import librosa
 from tabulate import tabulate
 
 # =======================
-# Интерфейс для шума
+# Noise Classes (unchanged)
 # =======================
+from abc import ABC, abstractmethod
+
 class Noise(ABC):
     @abstractmethod
     def apply(self, audio: np.ndarray, sampling_rate: int) -> np.ndarray:
-        """Метод для зашумления аудиосигнала"""
+        """Method to add noise to an audio signal."""
         pass
 
 class GaussianNoise(Noise):
@@ -36,58 +37,45 @@ class UniformNoise(Noise):
         return audio + noise
 
 def apply_noises(audio: np.ndarray, sampling_rate: int, noises: list) -> np.ndarray:
-    """
-    Применяет список шумов к аудио последовательно (для стандартных сценариев).
-    Для фоновых шумов используется отдельный класс.
-    """
+    """Sequentially applies a list of noises to an audio signal."""
     noisy_audio = audio.copy()
     for noise in noises:
         noisy_audio = noise.apply(noisy_audio, sampling_rate)
     return noisy_audio
 
-print("ЧТО ДЕЛАТЬ С ФАЙЛАМИ С ГРОМКИМ ШУМОМ")
 class BackgroundNoise(Noise):
     """
-    Класс для фонового шума, загружаемого из файла.
-    Если длина файла больше длины аудио, то он обрезается до нужного размера,
-    если меньше – повторяется (с использованием np.resize).
+    Class to add background noise loaded from a file. If the noise file is longer than the audio,
+    it is trimmed; if it is shorter, it is repeated.
     """
     def __init__(self, noise_file: str, gain: float = 1.0):
         self.noise_file = noise_file
         self.gain = gain
         self.noise, self.noise_sr = sf.read(noise_file)
-        # Если аудио стерео, берем среднее по каналам
         if self.noise.ndim > 1:
             self.noise = np.mean(self.noise, axis=1)
     
     def apply(self, audio: np.ndarray, sampling_rate: int) -> np.ndarray:
-        # Если частоты дискретизации не совпадают, ресэмплим
         if sampling_rate != self.noise_sr:
             noise_resampled = librosa.resample(self.noise, orig_sr=self.noise_sr, target_sr=sampling_rate)
         else:
             noise_resampled = self.noise
         target_len = len(audio)
-        # Если шум длиннее, обрезаем его
         if len(noise_resampled) >= target_len:
             noise_used = noise_resampled[:target_len]
         else:
-            # Если короче – повторяем его
             noise_used = np.resize(noise_resampled, target_len)
         return audio + self.gain * noise_used
 
-# =======================
-# Функция загрузки фоновых шумов
-# =======================
 def load_background_noises(base_folder: str) -> dict:
     """
-    Обходит папку base_folder и для каждой подпапки создает список объектов BackgroundNoise.
-    Ключ словаря имеет формат "background_<имя_папки>".
+    Walks through a base folder and creates a list of BackgroundNoise objects for each subfolder.
+    The dictionary keys are formatted as "background_<folder_name>".
     """
     background_scenarios = {}
     for folder in os.listdir(base_folder):
         folder_path = os.path.join(base_folder, folder)
         if os.path.isdir(folder_path):
-            # Фильтруем аудио файлы по расширению, например .wav
             files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.lower().endswith('.wav')]
             if files:
                 noise_objects = [BackgroundNoise(noise_file=file) for file in files]
@@ -95,16 +83,13 @@ def load_background_noises(base_folder: str) -> dict:
     return background_scenarios
 
 # =======================
-# Интерфейс для метрик
+# Audio Metrics (unchanged)
 # =======================
 class AudioMetrics:
     def __init__(self):
         pass
 
     def compute_snr(self, clean: np.ndarray, processed: np.ndarray) -> float:
-        """
-        Вычисляет классический SNR.
-        """
         signal_power = np.mean(clean ** 2)
         noise_power = np.mean((clean - processed) ** 2)
         if noise_power < 1e-10:
@@ -113,13 +98,9 @@ class AudioMetrics:
         return snr
 
     def compute_segmental_snr(self, clean: np.ndarray, processed: np.ndarray, frame_size: int = 400, overlap: int = 200) -> float:
-        """
-        Вычисляет сегментный SNR по окнам сигнала.
-        """
         num_samples = len(clean)
         start = 0
         snr_list = []
-        
         while start < num_samples:
             end = start + frame_size
             if end > num_samples:
@@ -128,50 +109,34 @@ class AudioMetrics:
             else:
                 frame_clean = clean[start:end]
                 frame_processed = processed[start:end]
-            
             signal_power = np.mean(frame_clean ** 2)
             noise_power = np.mean((frame_clean - frame_processed) ** 2)
             if noise_power > 1e-10:
                 frame_snr = 10 * math.log10(signal_power / noise_power)
                 snr_list.append(frame_snr)
             start += (frame_size - overlap)
-        
         if snr_list:
             return np.mean(snr_list)
         else:
             return float('inf')
 
     def compute_lsd(self, clean: np.ndarray, processed: np.ndarray, n_fft: int = 512) -> float:
-        """
-        Вычисляет Log-Spectral Distance (LSD) между чистым и обработанным сигналом.
-        """
         clean_spec = np.abs(np.fft.rfft(clean, n=n_fft)) + 1e-8
         processed_spec = np.abs(np.fft.rfft(processed, n=n_fft)) + 1e-8
-        
         log_clean = np.log10(clean_spec)
         log_processed = np.log10(processed_spec)
-        
         lsd = np.sqrt(np.mean((log_clean - log_processed) ** 2))
         return lsd
     
     def compute_mse(self, clean: np.ndarray, processed: np.ndarray) -> float:
-        """
-        Вычисляет среднеквадратичную ошибку (MSE) между чистым и обработанным сигналом.
-        """
         mse = np.mean((clean - processed) ** 2)
         return mse
 
     def compute_mae(self, clean: np.ndarray, processed: np.ndarray) -> float:
-        """
-        Вычисляет среднюю абсолютную ошибку (MAE) между чистым и обработанным сигналом.
-        """
         mae = np.mean(np.abs(clean - processed))
         return mae
 
     def compute_metrics(self, clean: np.ndarray, processed: np.ndarray) -> dict:
-        """
-        Вычисляет и возвращает набор метрик: SNR, сегментный SNR, LSD, MSE и MAE.
-        """
         return {
             "SNR": self.compute_snr(clean, processed),
             "Segmental_SNR": self.compute_segmental_snr(clean, processed),
@@ -182,43 +147,71 @@ class AudioMetrics:
         }
 
 # =======================
-# Модель удаления шумов
+# Base DenoiseModel (unchanged)
 # =======================
 class DenoiseModel(nn.Module):
     def __init__(self):
         super(DenoiseModel, self).__init__()
-        # Пример: простая заглушка без реальной обработки.
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # В реальной модели здесь будет логика денойзинга.
         return x
 
     def improve(self, audio: np.ndarray, sampling_rate: int) -> np.ndarray:
-        """
-        Унифицированный интерфейс для улучшения (удаления шумов) аудио.
-        Принимает numpy-массив и возвращает обработанный сигнал.
-        """
-        audio_tensor = torch.from_numpy(audio).float().unsqueeze(0)  # [1, length]
+        audio_tensor = torch.from_numpy(audio).float().unsqueeze(0)
         with torch.no_grad():
             denoised_tensor = self.forward(audio_tensor)
         return denoised_tensor.squeeze(0).numpy()
 
 # =======================
-# Пайплайн проверки модели
+# DeepFilterNet Integration
+# =======================
+class DeepFilterNetDenoiser(DenoiseModel):
+    def __init__(self):
+        super(DeepFilterNetDenoiser, self).__init__()
+        # Import DeepFilterNet helper functions.
+        from df.enhance import enhance, init_df
+        self.enhance = enhance
+        # Initialize DeepFilterNet. This loads the default model.
+        self.model, self.df_state, _ = init_df()
+        # Expected sampling rate for the model.
+        self.expected_sr = self.df_state.sr()
+
+    def improve(self, audio: np.ndarray, sampling_rate: int) -> np.ndarray:
+        # Resample if the input sampling rate is different from the expected.
+        if sampling_rate != self.expected_sr:
+            audio = librosa.resample(audio, orig_sr=sampling_rate, target_sr=self.expected_sr)
+        import torch
+        # Convert the NumPy array to a float tensor.
+        audio_tensor = torch.from_numpy(audio).float()
+        # Ensure the audio tensor is 2D: [channels, time]. If it's 1D, add a channel dimension.
+        if audio_tensor.dim() == 1:
+            audio_tensor = audio_tensor.unsqueeze(0)  # Now shape is [1, T]
+        # Run enhancement using DeepFilterNet.
+        enhanced_tensor = self.enhance(self.model, self.df_state, audio_tensor)
+        # Convert the output tensor back to a NumPy array.
+        enhanced = enhanced_tensor.cpu().numpy()
+        # Optionally, resample back to the original rate if needed.
+        if sampling_rate != self.expected_sr:
+            # Squeeze extra dimensions before resampling.
+            enhanced = librosa.resample(enhanced.squeeze(), orig_sr=self.expected_sr, target_sr=sampling_rate)
+        return enhanced
+
+
+
+# =======================
+# Pipeline Execution
 # =======================
 def run_pipeline(only_background=False):
-    # Загрузка датасета.
+    # Load dataset.
     dataset = load_dataset("Nexdata/Russian_Children_Spontaneous_Speech_Data", 
                            cache_dir=r"E:\mai\Diploma\speech_enhancement\DPipe\cache")['train']
-    print(f"Загружено {len(dataset)} примеров")
+    print(f"Loaded {len(dataset)} samples")
     
-    # Инициализируем модель и метрики.
-    model = DenoiseModel()
+    # Initialize the DeepFilterNet-based denoiser.
+    model = DeepFilterNetDenoiser()
     metrics = AudioMetrics()
 
-    # Если запускаем только на background noise, то стандартные сценарии не используются.
     if not only_background:
-        # Определяем стандартные шумы.
         gaussian_noise = GaussianNoise(std=0.02)
         uniform_noise = UniformNoise(low=-0.02, high=0.02)
         noise_scenarios = {
@@ -230,32 +223,25 @@ def run_pipeline(only_background=False):
     else:
         noise_scenarios = {}
 
-    # Загружаем фоновые шумы из указанной папки.
+    # Load background noises.
     bg_folder = r"E:\mai\Diploma\speech_enhancement\DPipe\data\background_noise"
     bg_scenarios = load_background_noises(bg_folder)
-    # Если запускаем только на background noise, то сценарии берём только из фоновых шумов.
     noise_scenarios.update(bg_scenarios)
     
-    # Словари для сохранения итоговых метрик.
     baseline_results = {}
     improved_results = {}
-    
-    # Для фоновых сценариев отдельно сохраняем результаты для итоговой таблицы.
     background_results = {}
     
-    # Проходим по каждому сценарию шума.
     for scenario, noise_list in noise_scenarios.items():
-        print(f"\nСценарий: {scenario}")
+        print(f"\nScenario: {scenario}")
         baseline_metrics_list = []
         improved_metrics_list = []
         
         for sample in dataset:
-            # Извлекаем аудио и sampling_rate из датасета.
             audio_info = sample["audio"]
             audio = audio_info["array"]
             sampling_rate = audio_info["sampling_rate"]
             
-            # Если сценарий с фоновой шумовой папкой, обрабатываем каждый файл отдельно и усредняем.
             if scenario.startswith("background_"):
                 baseline_for_sample = []
                 improved_for_sample = []
@@ -266,14 +252,14 @@ def run_pipeline(only_background=False):
                     m_improved = metrics.compute_metrics(audio, denoised_audio)
                     baseline_for_sample.append(m_baseline)
                     improved_for_sample.append(m_improved)
-                # Усредняем метрики по всем файлам в папке для данного примера.
                 metrics_baseline = {key: np.mean([m[key] for m in baseline_for_sample]) 
                                     for key in baseline_for_sample[0].keys()}
                 metrics_improved = {key: np.mean([m[key] for m in improved_for_sample]) 
                                     for key in improved_for_sample[0].keys()}
             else:
-                # Для остальных сценариев применяем шум(ы) последовательно.
-                noisy_audio = apply_noises(audio, sampling_rate, noise_list)
+                noisy_audio = audio.copy()
+                for noise in noise_list:
+                    noisy_audio = noise.apply(noisy_audio, sampling_rate)
                 metrics_baseline = metrics.compute_metrics(audio, noisy_audio)
                 denoised_audio = model.improve(noisy_audio, sampling_rate)
                 metrics_improved = metrics.compute_metrics(audio, denoised_audio)
@@ -281,7 +267,6 @@ def run_pipeline(only_background=False):
             baseline_metrics_list.append(metrics_baseline)
             improved_metrics_list.append(metrics_improved)
         
-        # Усредняем метрики по всем примерам.
         avg_baseline = {key: np.mean([m[key] for m in baseline_metrics_list]) 
                         for key in baseline_metrics_list[0].keys()}
         avg_improved = {key: np.mean([m[key] for m in improved_metrics_list]) 
@@ -289,22 +274,19 @@ def run_pipeline(only_background=False):
         baseline_results[scenario] = avg_baseline
         improved_results[scenario] = avg_improved
         
-        # Выводим таблицу для каждого сценария.
         table_data = []
         for metric in avg_baseline.keys():
             table_data.append([metric, f"{avg_baseline[metric]:.2f}", f"{avg_improved[metric]:.2f}"])
-        print("Метрики:")
-        headers = ["Метрика", "Baseline", "Denoised"]
+        print("Metrics:")
+        headers = ["Metric", "Baseline", "Denoised"]
         print(tabulate(table_data, headers=headers, tablefmt="grid"))
         
-        # Если сценарий относится к фоновой шумовой папке, сохраняем для итоговой таблицы.
         if scenario.startswith("background_"):
             background_results[scenario] = (avg_baseline, avg_improved)
     
-    # Итоговая таблица для фоновых шумов (разбиение по папкам).
     if background_results:
         final_table = []
-        headers = ["Папка", "SNR (base)", "SNR (denoised)",
+        headers = ["Folder", "SNR (base)", "SNR (denoised)",
                    "SegSNR (base)", "SegSNR (denoised)",
                    "LSD (base)", "LSD (denoised)",
                    "MSE (base)", "MSE (denoised)",
@@ -318,10 +300,8 @@ def run_pipeline(only_background=False):
                 f"{base['MSE']:.4f}", f"{denoised['MSE']:.4f}",
                 f"{base['MAE']:.4f}", f"{denoised['MAE']:.4f}"
             ])
-        print("\nИтоговая таблица для фоновых шумов:")
+        print("\nFinal table for background noises:")
         print(tabulate(final_table, headers=headers, tablefmt="grid"))
         
 if __name__ == '__main__':
-    # Для тестирования только на background noise передайте only_background=True
-    print("КАКАЯ метрика должна быть для онли бэкграунд? я добавил Processed_sum")
-    run_pipeline(only_background=True)
+    run_pipeline(only_background=False)
