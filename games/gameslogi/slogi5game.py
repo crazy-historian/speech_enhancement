@@ -36,9 +36,10 @@ GAME_DURATION = 60
 BLOCKSIZE = 1024
 PITCH_FLOOR = 100
 PITCH_CEILING = 600
-SILENCE_THRESHOLD_DB = 40.0
+SILENCE_THRESHOLD_DB = 50.0
 VOICING_THRESHOLD = 0.6
 BLOCKS_TO_SILENT = 2
+
 
 # ---------------------- Класс GUI ----------------------
 class GameConfigWindow(QWidget):
@@ -95,6 +96,8 @@ def analyze_voice():
         stream.set_methods(UnpackRawInFloat32())
         silent_counter = 0
         start_time = time.time()
+        last_pitch_time = start_time
+        last_value_time = start_time
         while time.time() - start_time < GAME_DURATION:
             raw_data = stream.read(BLOCKSIZE)
             if not raw_data:
@@ -106,6 +109,7 @@ def analyze_voice():
             intensity_obj = sound.to_intensity()
             intensity_values = intensity_obj.values.T.flatten()
             avg_intensity = np.mean(intensity_values) if len(intensity_values) > 0 else -50
+        
 
             pitch_obj = sound.to_pitch_ac(
                 time_step=0.01,
@@ -119,6 +123,19 @@ def analyze_voice():
             pitch_values = pitch_obj.selected_array['frequency']
             pitch_values[(pitch_values == 0) | (pitch_values > PITCH_CEILING)] = np.nan
             avg_pitch = np.nanmean(pitch_values) if np.any(~np.isnan(pitch_values)) else np.nan
+
+            # Время появления pitch_values
+            now = time.time()
+            current_time = now - start_time
+
+            print(f"[{now - start_time:.2f}s] pitch_values обновлены")
+            if np.any(~np.isnan(pitch_values)):
+                avg_pitch = np.nanmean(pitch_values)
+                print(f"{current_time:.2f} s | Pitch_values: {pitch_values[:5]} | Avg pitch: {avg_pitch:.2f} Hz")
+            else:
+                avg_pitch = np.nan
+                print(f"{current_time:.2f} s | Pitch_values: {pitch_values[:5]} | Avg pitch: NaN")
+
 
             above_silence_threshold = avg_intensity > SILENCE_THRESHOLD_DB
             valid_pitch = (avg_pitch > PITCH_FLOOR)
@@ -389,6 +406,7 @@ class VoiceArcadeGame(arcade.Window):
             if gem.right < 0:
                 if len(gem.letters) == 0:
                     gem.remove_from_sprite_lists()
+                    
                 else:
                     # Если гем ушел за экран, но в нем еще остались буквы,
                     # оставляем гем, чтобы игрок мог их собрать.

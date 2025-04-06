@@ -1,0 +1,20 @@
+{
+    "mic_device_index": 0,
+    "tasks": [
+        {
+            "name": "Задание 1",
+            "quiet": 120,
+            "norm": 150,
+            "loud": 240,
+            "gen_quiet": false,
+            "gen_norm": true,
+            "gen_loud": false,
+            "frequency": 6.0,
+            "duration": 60,
+            "artifacts_count": 5,
+            "artifact_interval": 0.4,
+            "text": "ПА",
+            "smooth": true
+        }
+    ]
+}

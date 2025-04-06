@@ -103,7 +103,7 @@ with InputStream(
         smoothed_pitches = moving_average(pitches, WINDOW_SIZE)
 
         # Вывод в консоль
-        print(f"{current_time:.2f} s | Pitch: {avg_pitch:.2f} Hz | Smoothed: {smoothed_pitches[-1]:.2f} Hz")
+        print(f"{current_time:.2f} s | Pitch: {avg_pitch:.2f} Hz | Pitch_values: {smoothed_pitches[-1]:.2f} Hz")
 
         # Обновление графика
         ax.cla()

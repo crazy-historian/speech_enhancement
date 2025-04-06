@@ -1,0 +1,7 @@
+{
+    "mic_device_index": 0,
+    "silence_threshold_db": 50.0,
+    "move_duration": 2.0,
+    "task_text": "МА",
+    "task_name": "Задание 3"
+}

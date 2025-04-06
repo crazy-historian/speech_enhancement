@@ -21,6 +21,7 @@ GROUND_Y = 100
 AIR_Y = 300
 
 CURRENT_TASK = "МА"
+#дается эталонный вариант слитности, раздельности
 
 UP_FORCE = 50
 GRAVITY_FORCE = 30
@@ -29,7 +30,7 @@ MAX_DOWN_SPEED = 100
 
 WAVE_INTERVAL = 3
 WAVE_SIZE = 3
-ALPHABET_FOLDER = "alphabet40/"
+ALPHABET_FOLDER = "alphabet/"
 
 GAME_DURATION = 60
 
@@ -38,7 +39,9 @@ PITCH_FLOOR = 100
 PITCH_CEILING = 600
 SILENCE_THRESHOLD_DB = 40.0
 VOICING_THRESHOLD = 0.6
-BLOCKS_TO_SILENT = 2
+BLOCKS_TO_SILENT = 3
+
+
 
 # ---------------------- Класс GUI ----------------------
 class GameConfigWindow(QWidget):
@@ -242,11 +245,11 @@ class Gem:
 
         letter_spacing = 70
         for i, letter in enumerate(word):
-            path = os.path.join(ALPHABET_FOLDER, f"{letter} beresta.jpg")
+            path = os.path.join(ALPHABET_FOLDER, f"{letter} буква.png")
             if not os.path.exists(path):
                 print(f"Файл не найден: {path}")
                 continue
-            letter_sprite = arcade.Sprite(path, scale=0.2)
+            letter_sprite = arcade.Sprite(path, scale=0.1)
             letter_sprite.center_x = x + i * letter_spacing
             letter_sprite.center_y = y
             self.letters.append(letter_sprite)

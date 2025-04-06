@@ -1,0 +1,16 @@
+[
+    {
+        "quiet": 45,
+        "norm": 60,
+        "loud": 75,
+        "gen_quiet": false,
+        "gen_norm": true,
+        "gen_loud": false,
+        "frequency": 6.0,
+        "duration": 60,
+        "artifacts_count": 5,
+        "artifact_interval": 0.2,
+        "text": "МА",
+        "smooth": true
+    }
+]

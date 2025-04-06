@@ -7,7 +7,7 @@ from audiochains.block_methods import UnpackRawInFloat32
 
 BLOCKSIZE = 1024
 SILENCE_THRESHOLD_DB = 40.0
-GAME_DURATION = 10  # Длительность измерения интенсивности
+GAME_DURATION = 60  # Длительность измерения интенсивности
 
 def analyze_and_plot_voice_intensity():
     """

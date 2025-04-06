@@ -1,0 +1,42 @@
+{
+  "name": "Сережа",
+  "settings": {
+    "pitch_ranges": {
+      "low": [
+        150,
+        199
+      ],
+      "normal": [
+        100,
+        110
+      ],
+      "high": [
+        251,
+        300
+      ]
+    },
+    "volume_threshold_db": 50.0,
+    "base_duration": 3.0,
+    "max_out_of_zone": 0.5,
+    "blocks_to_silent": 2
+  },
+  "tasks": [
+    {
+      "name": "Задание",
+      "frequency": [
+        110,
+        170
+      ],
+      "duration": 3.0,
+      "max_out_of_zone": 0.5,
+      "description": "МА"
+    },
+    {
+      "name": "Задание 2",
+      "frequency": "low",
+      "duration": 3.0,
+      "max_out_of_zone": 0.5,
+      "description": "ДА-ДА-ДА"
+    }
+  ]
+}
