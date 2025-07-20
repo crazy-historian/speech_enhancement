@@ -5,13 +5,14 @@ import parselmouth
 import numpy as np
 from audiochains.streams import InputStream
 from audiochains.block_methods import UnpackRawInFloat32
+from pathlib import Path
 
 # =========================
 # --- Глобальные настройки
 # =========================
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 512
-SCREEN_TITLE = "Voice Ship Control"
+SCREEN_TITLE = "Голосомобиль"
 TRACK_CENTER_Y = SCREEN_HEIGHT - 350
 TRACK_HEIGHT = 150
 TRACK_TOP = TRACK_CENTER_Y + TRACK_HEIGHT // 2
@@ -30,7 +31,7 @@ SMOOTHING_FACTOR = 0.2  # сглаживание движения по Y
 
 # Аудио
 BLOCKSIZE = 1024
-SILENCE_THRESHOLD_DB = 50.0
+SILENCE_THRESHOLD_DB = 60.0
 BLOCKS_TO_SILENT = 4
 PITCH_FLOOR = 100
 PITCH_CEILING = 600
@@ -258,7 +259,20 @@ class VoiceShipGame(arcade.Window):
 
         if profile and task:
             self.apply_task_settings(task)
-
+        
+        self.task_text_sprite = None
+        if self.task and self.task.description:
+            font_path = str(Path("alphabet/shrift_mult.otf").absolute())
+            self.task_text_sprite = arcade.create_text_sprite(
+                text=self.task.description,
+                start_x=SCREEN_WIDTH // 2,
+                start_y=SCREEN_HEIGHT // 2 + 100,
+                font_size=50,
+                font_name=font_path,
+                color=arcade.color.RED_DEVIL,
+                anchor_x="center",
+                anchor_y="center"
+    )
 
         # Флаги состояния
         self.started = False
@@ -314,6 +328,22 @@ class VoiceShipGame(arcade.Window):
             self.task = task
             self.apply_task_settings(task)
         
+        if self.task and self.task.description:
+            font_path = str(Path("alphabet/shrift_mult.otf").absolute())
+            self.task_text_sprite = arcade.create_text_sprite(
+                text=self.task.description,
+                start_x=SCREEN_WIDTH // 2,
+                start_y=SCREEN_HEIGHT // 2 + 100,
+                font_size=50,
+                font_name=font_path,
+                color=arcade.color.RED_DEVIL,
+                anchor_x="center",
+                anchor_y="center"
+            )
+        else:
+            self.task_text_sprite = None
+        
+        
     def on_draw(self):
         arcade.start_render()
 
@@ -324,66 +354,69 @@ class VoiceShipGame(arcade.Window):
         self.ship.draw()
 
         # 3) Зоны
-        arcade.draw_rectangle_outline(SCREEN_WIDTH // 2, SCREEN_HEIGHT -350, SCREEN_WIDTH, 150, arcade.color.GREEN, 2)
+        #arcade.draw_rectangle_outline(SCREEN_WIDTH // 2, SCREEN_HEIGHT -350, SCREEN_WIDTH, 150, arcade.color.GREEN, 2)
         #arcade.draw_rectangle_outline(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 80, SCREEN_WIDTH, 160, arcade.color.RED, 2)
         #arcade.draw_rectangle_outline(SCREEN_WIDTH // 2, 80, SCREEN_WIDTH, 160, arcade.color.RED, 2)
 
-        if self.task and self.task.description:
-            arcade.draw_text(
-            self.task.description,
-            SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100,  # немного выше центра
-            arcade.color.PINK_LACE,
-            40,
-            width=SCREEN_WIDTH - 200,  # немного отступов слева и справа
-            align="center",
-            anchor_x="center",
-            anchor_y="center",         # чтобы учитывать вертикальное центрирование
-            multiline=True
-            )
+        # if self.task and self.task.description:
+        #     arcade.draw_text(
+        #     self.task.description,
+        #     SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100,  # немного выше центра
+        #     arcade.color.PINK_LACE,
+        #     40,
+        #     width=SCREEN_WIDTH - 200,  # немного отступов слева и справа
+        #     align="center",
+        #     anchor_x="center",
+        #     anchor_y="center",         # чтобы учитывать вертикальное центрирование
+        #     multiline=True
+        #     )
+        
+        if self.task_text_sprite:
+            self.task_text_sprite.draw()
 
         
         # 4) Победа
         if self.success and not self.game_over:
             arcade.draw_text(
-                "SUCCESS!",
+                "МОЛОДЕЦ!",
                 SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
-                arcade.color.GREEN, 50, anchor_x="center"
+                arcade.color.TEA_GREEN, 50, anchor_x="center"
             )
             
 
         # 5) Проигрыш
         if self.game_over and not self.success:
             arcade.draw_text(
-                "GAME OVER",
+                "Попробуй еще раз",
                 SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
-                arcade.color.RED, 50, anchor_x="center"
+                arcade.color.YELLOW_ORANGE, 50, anchor_x="center"
             )
 
         # 6) Таймер общего прохождения
-        if self.timer_start_time:
-            arcade.draw_text(
-                f"Time: {self.elapsed_time:.2f}s",
-                SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT - 60,
-                arcade.color.BLACK, 20,
-                anchor_x="center"
-            )
+        # if self.timer_start_time:
+        #     arcade.draw_text(
+        #         f"Time: {self.elapsed_time:.2f}s",
+        #         SCREEN_WIDTH // 2,
+        #         SCREEN_HEIGHT - 60,
+        #         arcade.color.BLACK, 20,
+        #         anchor_x="center"
+        #     )
 
         # 7) Шкала pitch
-        self.draw_pitch_scale()
+        #self.draw_pitch_scale()
 
         # 8) Если челлендж активен, покажем таймер (сколько осталось)
-        if self.scrolling_background.challenge_active:
-            time_left = self.scrolling_background.challenge_end_time - time.time()
-            if time_left < 0:
-                self.success=True
-                time_left = 0
+        # if self.scrolling_background.challenge_active:
+        #     time_left = self.scrolling_background.challenge_end_time - time.time()
+        #     if time_left < 0:
+        #         self.success=True
+        #         time_left = 0
                 
-            arcade.draw_text(
-                f"Challenge: {time_left:.2f}s",
-                10, SCREEN_HEIGHT - 30,
-                arcade.color.RED, 20
-            )
+        #     arcade.draw_text(
+        #         f"Challenge: {time_left:.2f}s",
+        #         10, SCREEN_HEIGHT - 30,
+        #         arcade.color.RED, 20
+        #     )
         
 
     def draw_pitch_scale(self):
@@ -565,9 +598,9 @@ def analyze_voice():
                 if last_valid_pitch is not None:
                     # Выдаём "1, last_valid_pitch" короткое время, если голос только что пропал
                     yield 1, last_valid_pitch
-                else:
+                #else:
                     # Если никогда не было pitch — совсем 0, None
-                    yield 0, None
+                    #yield 0, None
 
                 # Если некоторое число блоков подряд нет голоса — стабильно 0
                 if silent_counter >= BLOCKS_TO_SILENT:

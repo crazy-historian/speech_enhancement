@@ -7,17 +7,19 @@ import numpy as np
 import parselmouth
 import os
 from pathlib import Path
-
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from audiochains.streams import InputStream
 from audiochains.block_methods import UnpackRawInFloat32
+from collections import deque
 
 # ------------------ Глобальные настройки, которые будем переопределять при запуске ------------------
 SCREEN_WIDTH = 1276
 SCREEN_HEIGHT = 660
-SCREEN_TITLE = "Voice-Controlled Arcade Game"
+SCREEN_TITLE = "Громик/Пичик"
 
 SCROLL_SPEED = 10
-GROUND_Y = 70
+GROUND_Y = 110
 AIR_Y = 600
 
 PITCH_FLOOR = 100
@@ -25,7 +27,7 @@ PITCH_CEILING = 300
 
 BLOCKSIZE = 1024
 SILENCE_THRESHOLD_DB = 50.0
-BLOCKS_TO_SILENT = 6
+BLOCKS_TO_SILENT = 3
 
 SMOOTHING_ALPHA = 0.6
 RESPONSE_FACTOR = 0.9
@@ -44,18 +46,20 @@ mic_device_index = None  # сюда будем подставлять устро
 
 
 # ------------------ Функция анализа голоса (Pitch) ------------------
-def analyze_voice():
+
+def analyze_voice(window_size=3):
     with InputStream(
         samplerate=16000,
         blocksize=BLOCKSIZE,
         channels=1,
         sampwidth=2,
-        device=mic_device_index  # <-- подставим выбранный из pitch_config
+        device=mic_device_index
     ) as stream:
         stream.set_methods(UnpackRawInFloat32())
         silent_counter = 0
         start_time = time.time()
         last_valid_pitch = None  
+        smoothing_window = deque(maxlen=window_size)  # окно сглаживания
 
         while time.time() - start_time < GAME_DURATION:
             raw_data = stream.read(BLOCKSIZE)
@@ -65,12 +69,10 @@ def analyze_voice():
             signal = stream.chain_of_methods(raw_data)
             sound = parselmouth.Sound(values=signal, sampling_frequency=stream.samplerate)
 
-            # Интенсивность (для определения тишины)
             intensity_obj = sound.to_intensity()
             intensity_values = intensity_obj.values.T.flatten()
             avg_intensity = np.mean(intensity_values) if len(intensity_values) > 0 else -50
 
-            # Частота (pitch)
             pitch_obj = sound.to_pitch_ac(
                 time_step=0.01,
                 pitch_floor=PITCH_FLOOR,
@@ -87,11 +89,13 @@ def analyze_voice():
             if above_silence_threshold and valid_pitch:
                 silent_counter = 0
                 last_valid_pitch = avg_pitch
-                yield avg_pitch
+                smoothing_window.append(avg_pitch)
+                yield np.mean(smoothing_window)
             else:
                 silent_counter += 1
                 if silent_counter < BLOCKS_TO_SILENT and last_valid_pitch is not None:
-                    yield last_valid_pitch
+                    smoothing_window.append(last_valid_pitch)
+                    yield np.mean(smoothing_window)
                 else:
                     yield None
 
@@ -266,6 +270,8 @@ class VoiceArcadeGame(arcade.Window):
         self.total_artifacts = 0
         self.intensity_wave = 0  # здесь будем хранить "требуемую" громкость волны
         self.time_last_wave = 0
+        self.pitch_history = []
+        self.block_interval = BLOCKSIZE / 16000
 
     def setup(self):
         self.player = PlayerCharacter()
@@ -276,12 +282,15 @@ class VoiceArcadeGame(arcade.Window):
 
         # Запускаем поток чтения pitch
         threading.Thread(target=self.voice_loop, daemon=True).start()
+        threading.Timer(GAME_DURATION + 0.5, self.plot_pitch_graph).start()
+
 
     def voice_loop(self):
         for pitch in self.voice_generator:
             if not self.voice_thread_running:
                 break
             self.current_pitch = pitch
+            self.pitch_history.append(pitch if pitch is not None else np.nan)
 
     def on_close(self):
         self.voice_thread_running = False
@@ -318,6 +327,29 @@ class VoiceArcadeGame(arcade.Window):
                 self.in_wave = False
                 self.wave_timer = now
 
+    def plot_pitch_graph(self):
+        if not self.pitch_history:
+            print("Нет данных для pitch-графика.")
+            return
+
+        timestamps = np.arange(len(self.pitch_history)) * self.block_interval
+        history = np.array(self.pitch_history)
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(timestamps, history, color='blue', label='Pitch (Hz)')
+        plt.title("График частоты тона (Pitch) за всё время игры")
+        plt.xlabel("Время (сек)")
+        plt.ylabel("Pitch (Hz)")
+        plt.ylim(100, 300)  # фиксируем шкалу по Y
+        plt.yticks(np.arange(100, 301, 20))  # деления через 20 Гц
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+
+        filename = f"pitch_plot_{time.strftime('%Y%m%d_%H%M%S')}.png"
+        plt.savefig(filename)
+        plt.close()
+        os.system(f"open {filename}")
     def on_draw(self):
         arcade.start_render()
         self.bg.draw()
@@ -336,15 +368,15 @@ class VoiceArcadeGame(arcade.Window):
         )
 
         if self.game_over:
-            arcade.draw_text(
-                self.final_text,
-                SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2 + 50,
-                arcade.color.BLACK,
-                font_size=30,
-                anchor_x="center",
-                anchor_y="center"
-            )
+            # arcade.draw_text(
+            #     self.final_text,
+            #     SCREEN_WIDTH // 2,
+            #     SCREEN_HEIGHT // 2 + 50,
+            #     arcade.color.BLACK,
+            #     font_size=30,
+            #     anchor_x="center",
+            #     anchor_y="center"
+            # )
             stars_path = f"stars/star_{self.rating}.png"
             texture = arcade.load_texture(stars_path)
             arcade.draw_texture_rectangle(
@@ -354,7 +386,7 @@ class VoiceArcadeGame(arcade.Window):
                 texture.height,
                 texture
             )
-            self.kombo_sprite.draw()
+            #self.kombo_sprite.draw()
 
     def on_update(self, delta_time):
         if self.game_over:

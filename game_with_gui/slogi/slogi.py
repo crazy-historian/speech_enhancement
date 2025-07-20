@@ -18,9 +18,9 @@ import math
 # ------------------------- Глобальные настройки -------------------------
 SCREEN_WIDTH = 1280 
 SCREEN_HEIGHT = 660
-SCREEN_TITLE = "Voice-Controlled Arcade Game"
+SCREEN_TITLE = "Слоготакт"
 
-SCROLL_SPEED = 10
+SCROLL_SPEED = 5
 COLLECTION_TIME = 3
 
 GROUND_Y = 100
@@ -345,16 +345,16 @@ class VoiceArcadeGame(arcade.Window):
 
         self.player.draw()
 
-        arcade.draw_text(f"Score: {self.score}",
-                         10, SCREEN_HEIGHT - 30,
-                         arcade.color.BLACK, 20)
-        arcade.draw_text(f"Time left: {int(GAME_DURATION - (time.time() - self.start_time))}",
-                         SCREEN_WIDTH - 120, SCREEN_HEIGHT - 30,
-                         arcade.color.BLACK, 20)
+        # arcade.draw_text(f"Score: {self.score}",
+        #                  10, SCREEN_HEIGHT - 30,
+        #                  arcade.color.BLACK, 20)
+        # arcade.draw_text(f"Time left: {int(GAME_DURATION - (time.time() - self.start_time))}",
+        #                  SCREEN_WIDTH - 120, SCREEN_HEIGHT - 30,
+        #                  arcade.color.BLACK, 20)
 
-        arcade.draw_text(f"Air time: {self.airborne_time:.1f}s",
-                         SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30,
-                         arcade.color.BLACK, 20, anchor_x="center")
+        # arcade.draw_text(f"Air time: {self.airborne_time:.1f}s",
+        #                  SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30,
+        #                  arcade.color.BLACK, 20, anchor_x="center")
 
         if time.time() - self.start_time > self.game_duration:
             arcade.draw_text("GAME OVER!",

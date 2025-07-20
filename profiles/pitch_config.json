@@ -15,6 +15,36 @@
             "artifact_interval": 0.4,
             "text": "ПА",
             "smooth": true
+        },
+        {
+            "name": "",
+            "quiet": 120,
+            "norm": 180,
+            "loud": 240,
+            "gen_quiet": false,
+            "gen_norm": true,
+            "gen_loud": true,
+            "frequency": 6.0,
+            "duration": 60,
+            "artifacts_count": 5,
+            "artifact_interval": 0.2,
+            "text": "ДА",
+            "smooth": true
+        },
+        {
+            "name": "Задание 2",
+            "quiet": 140,
+            "norm": 180,
+            "loud": 240,
+            "gen_quiet": false,
+            "gen_norm": true,
+            "gen_loud": false,
+            "frequency": 4.0,
+            "duration": 40,
+            "artifacts_count": 4,
+            "artifact_interval": 0.2,
+            "text": "СА",
+            "smooth": true
         }
     ]
 }

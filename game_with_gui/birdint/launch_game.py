@@ -19,3 +19,5 @@ if __name__ == "__main__":
     window = GameLauncher()
     window.show()
     sys.exit(app.exec())
+
+

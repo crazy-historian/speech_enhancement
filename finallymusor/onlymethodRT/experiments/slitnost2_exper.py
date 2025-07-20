@@ -13,10 +13,10 @@ PITCH_CEILING = 600
 VOICING_THRESHOLD = 0.6
 SILENCE_THRESHOLD_DB = 45.0
 BLOCKS_TO_SILENT = 2
-GAME_DURATION = 60  # сек
-BURST_INTERVAL = 6
+GAME_DURATION = 30  # сек
+BURST_INTERVAL = 4
 BURST_DURATION = 2
-FIRST_BURST_DELAY = 6
+FIRST_BURST_DELAY = 4
 
 def generate_task_line(duration: int, burst_interval: int = 6, burst_duration: int = 2, first_burst_delay: int = 6):
     step = 0.1
@@ -28,7 +28,7 @@ def generate_task_line(duration: int, burst_interval: int = 6, burst_duration: i
     return time_points, task_states
 
 def count_successful_hits(task_times, task_states, voice_times, voice_states,
-                          burst_interval=6, burst_duration=2, first_burst_delay=6):
+                          burst_interval=6, burst_duration=2, first_burst_delay=6, match_threshold=0.85):
     step = 0.1
     successful_hits = 0
     total_tasks = 0
@@ -37,15 +37,26 @@ def count_successful_hits(task_times, task_states, voice_times, voice_states,
     t = first_burst_delay
     while t + burst_duration <= GAME_DURATION:
         total_tasks += 1
+        # Выбираем все voice_state в пределах текущего target-окна
         indices = [i for i, time in enumerate(voice_times) if t <= time < t + burst_duration]
-        if indices and all(voice_states[i] == 1 for i in indices):
-            successful_hits += 1
-            task_hits.append((t, t + burst_duration, True))
+        if indices:
+            # Считаем, сколько из них имеют voice_state = 1
+            count_active = sum(voice_states[i] == 1 for i in indices)
+            fraction_active = count_active / len(indices)
+
+            if fraction_active >= match_threshold:
+                successful_hits += 1
+                task_hits.append((t, t + burst_duration, True))
+            else:
+                task_hits.append((t, t + burst_duration, False))
         else:
+            # Если вообще нет данных в интервале, считаем как промах
             task_hits.append((t, t + burst_duration, False))
+
         t += burst_interval
 
     return successful_hits, total_tasks, task_hits
+
 
 def analyze_voice():
     with InputStream(samplerate=16000, blocksize=BLOCKSIZE, channels=1, sampwidth=2) as stream:

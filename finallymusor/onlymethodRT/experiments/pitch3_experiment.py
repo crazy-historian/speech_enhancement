@@ -7,37 +7,35 @@ from audiochains.streams import InputStream
 from audiochains.block_methods import UnpackRawInFloat32
 from collections import deque
 
-# --- Настройки эксперимента ---
+# --- Настройки ---
 BLOCKSIZE = 1024
 SAMPLERATE = 16000
 DURATION = 10
 SMOOTHING_WINDOW = 2
 EMA_ALPHA = 0.15
 SMOOTHING_MODE = "mean"  # "mean" или "ema"
+MIN_PITCH_SEGMENT_DURATION = 0.1  # сек
+SILENCE_THRESHOLD_DB = 45.0
 
-# --- Пороги классификации ---
-quiet_min = 40.0
-quiet_max = 49.9
-normal_min = 50.0
-normal_max = 69.9
-loud_min = 70.0
-loud_max = 100.0
+# --- Диапазоны частот ---
+low_min = 80
+low_max = 140
+normal_min = 140.1
+normal_max = 210
+high_min = 210.1
+high_max = 600
 
-# --- Минимальная продолжительность озвученного сегмента ---
-MIN_SPOKEN_DURATION = 0.3  # секунды
-
-# --- Основной анализ ---
-def analyze_voice_levels():
+def analyze_pitch_levels():
     with InputStream(samplerate=SAMPLERATE, blocksize=BLOCKSIZE, channels=1, sampwidth=2) as stream:
         stream.set_methods(UnpackRawInFloat32())
 
         fig, ax = plt.subplots()
         times = []
-        smoothed_intensities = []
+        smoothed_pitches = []
         start_time = time.time()
         current_time = 0
         ema_value = None
-        intensity_window = deque(maxlen=SMOOTHING_WINDOW)
+        pitch_window = deque(maxlen=SMOOTHING_WINDOW)
         WINDOW_WIDTH = 12
 
         while current_time < DURATION:
@@ -47,55 +45,71 @@ def analyze_voice_levels():
 
             signal = stream.chain_of_methods(raw_data)
             sound = parselmouth.Sound(values=signal, sampling_frequency=SAMPLERATE)
+
+            # --- Интенсивность ---
             intensity_obj = sound.to_intensity()
             intensity_values = intensity_obj.values.T.flatten()
-            avg_intensity = np.mean(intensity_values) if len(intensity_values) > 0 else 0
+            avg_intensity = np.mean(intensity_values) if len(intensity_values) > 0 else -50
+
+            # --- Если тишина — pitch = 0 ---
+            if avg_intensity < SILENCE_THRESHOLD_DB:
+                avg_pitch = 0
+            else:
+                pitch_obj = sound.to_pitch_ac(
+                    time_step=0.01,
+                    pitch_floor=75,
+                    pitch_ceiling=600,
+                    voicing_threshold=0.6
+                )
+                pitch_values = pitch_obj.selected_array['frequency']
+                pitch_values[(pitch_values == 0) | (pitch_values > 600)] = np.nan
+                avg_pitch = np.nanmean(pitch_values) if np.any(~np.isnan(pitch_values)) else 0
 
             # --- Сглаживание ---
             if SMOOTHING_MODE == "mean":
-                intensity_window.append(avg_intensity)
-                smoothed = np.mean(intensity_window)
+                pitch_window.append(avg_pitch)
+                smoothed = np.mean(pitch_window)
             elif SMOOTHING_MODE == "ema":
                 if ema_value is None:
-                    ema_value = avg_intensity
+                    ema_value = avg_pitch
                 else:
-                    ema_value = EMA_ALPHA * avg_intensity + (1 - EMA_ALPHA) * ema_value
+                    ema_value = EMA_ALPHA * avg_pitch + (1 - EMA_ALPHA) * ema_value
                 smoothed = ema_value
             else:
-                smoothed = avg_intensity  # fallback
+                smoothed = avg_pitch
 
             current_time = time.time() - start_time
             times.append(current_time)
-            smoothed_intensities.append(smoothed)
+            smoothed_pitches.append(smoothed)
 
             # --- Живой график ---
             ax.cla()
             ax.set_xlabel("Время (с)")
-            ax.set_ylabel("Интенсивность (dB)")
-            ax.set_title("Интенсивность в реальном времени")
+            ax.set_ylabel("Частота (Гц)")
+            ax.set_title("Pitch в реальном времени")
             ax.set_xlim(max(0, current_time - (WINDOW_WIDTH - 2)), current_time + 2)
-            ax.set_ylim(0, 100)
+            ax.set_ylim(75, 600)
             ax.grid()
-            ax.plot(times, smoothed_intensities, color="blue", label="Сглаженная интенсивность")
+            ax.plot(times, smoothed_pitches, color="purple", label="Сглаженный pitch")
             ax.legend()
             plt.pause(0.01)
 
     # --- Финальный анализ ---
     times = np.array(times)
-    intensities = np.array(smoothed_intensities)
+    pitches = np.array(smoothed_pitches)
 
     segments = []
     current_state = None
     start_segment = None
 
     for i in range(len(times)):
-        intensity = intensities[i]
-        if quiet_min <= intensity <= quiet_max:
-            state = "quiet"
-        elif normal_min <= intensity <= normal_max:
+        pitch = pitches[i]
+        if low_min <= pitch <= low_max:
+            state = "low"
+        elif normal_min <= pitch <= normal_max:
             state = "normal"
-        elif loud_min <= intensity <= loud_max:
-            state = "loud"
+        elif high_min <= pitch <= high_max:
+            state = "high"
         else:
             state = None
 
@@ -103,7 +117,7 @@ def analyze_voice_levels():
             if current_state is not None:
                 end_time = times[i]
                 duration = end_time - start_segment
-                if duration >= MIN_SPOKEN_DURATION:
+                if duration >= MIN_PITCH_SEGMENT_DURATION:
                     segments.append((start_segment, end_time, current_state))
             current_state = state
             start_segment = times[i]
@@ -111,11 +125,11 @@ def analyze_voice_levels():
     if current_state is not None:
         end_time = times[-1]
         duration = end_time - start_segment
-        if duration >= MIN_SPOKEN_DURATION:
+        if duration >= MIN_PITCH_SEGMENT_DURATION:
             segments.append((start_segment, end_time, current_state))
 
-    # --- Подсчёт времени по каждому состоянию ---
-    summary = {"quiet": 0.0, "normal": 0.0, "loud": 0.0}
+    # --- Подсчёт по категориям ---
+    summary = {"low": 0.0, "normal": 0.0, "high": 0.0}
     for start, end, state in segments:
         if state:
             summary[state] += end - start
@@ -123,30 +137,22 @@ def analyze_voice_levels():
     # --- Финальный график ---
     fig_final, ax_final = plt.subplots()
     ax_final.set_xlabel("Время (с)")
-    ax_final.set_ylabel("Интенсивность (dB)")
-    ax_final.set_title("Итоговая визуализация речевых состояний")
+    ax_final.set_ylabel("Частота (Гц)")
+    ax_final.set_title("Итоговая визуализация pitch-состояний")
     ax_final.set_xlim(0, DURATION)
-    ax_final.set_ylim(0, 100)
+    ax_final.set_ylim(75, 600)
     ax_final.grid()
-    ax_final.plot(times, intensities, color="black", label="Интенсивность")
+    ax_final.plot(times, pitches, color="black", label="Pitch")
 
     for start, end, state in segments:
-        if state == "quiet":
-            color = "blue"
-        elif state == "normal":
-            color = "green"
-        elif state == "loud":
-            color = "red"
-        else:
-            continue
-
+        color = {"low": "blue", "normal": "green", "high": "red"}.get(state, "gray")
         ax_final.add_patch(Rectangle(
-            (start, 0),
+            (start, 75),
             end - start,
-            100,
+            600 - 75,
             facecolor=color,
             alpha=0.3,
-            label=state if not any(s.get_label() == state for s in ax_final.patches) else None
+            label=state if not any(p.get_label() == state for p in ax_final.patches) else None
         ))
 
     handles, labels = ax_final.get_legend_handles_labels()
@@ -154,14 +160,14 @@ def analyze_voice_levels():
     plt.show()
 
     # --- Сводка ---
-    print(f"\n🧾 Сводка по состояниям (учитываются только участки ≥ {MIN_SPOKEN_DURATION} с):")
-    for state in ["quiet", "normal", "loud"]:
+    print(f"\n📊 Сводка по pitch (учитываются только участки ≥ {MIN_PITCH_SEGMENT_DURATION} с):")
+    for state in ["low", "normal", "high"]:
         print(f"🔹 {state.capitalize():<7}: {summary[state]:.1f} секунд")
 
 def main():
-    print("▶️ Запуск эксперимента 2: классификация речевых участков")
-    analyze_voice_levels()
-    print("🏁 Эксперимент завершён")
+    print("🎙️ Запуск pitch-анализатора с фильтрацией тишины")
+    analyze_pitch_levels()
+    print("✅ Анализ завершён")
 
 if __name__ == "__main__":
     main()

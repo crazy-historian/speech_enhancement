@@ -60,6 +60,10 @@ def main():
             pitch_values = pitch_obj.selected_array['frequency']
             pitch_values[(pitch_values == 0) | (pitch_values > PITCH_CEILING)] = np.nan
             avg_pitch = np.nanmean(pitch_values) if np.any(~np.isnan(pitch_values)) else None
+            print(intensity_obj)
+            
+            print("Pitch values:", [pitch_values])
+            print("Average intensity:", avg_pitch)
 
             # Условие для отображения частоты только при достаточной громкости
             if avg_intensity > SILENCE_THRESHOLD_DB:
@@ -72,7 +76,7 @@ def main():
 
             current_time = time.time() - start_time
             times.append(current_time)
-            pitches.append(last_valid_pitch)
+            pitches.append(pitch_values)
 
             # Очистка графика перед обновлением
             ax.cla()

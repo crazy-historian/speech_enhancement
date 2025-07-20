@@ -161,7 +161,7 @@ def analyze_and_plot_pitch():
             key=lambda x: x[1]
         )[0]
 
-        task_results.append((task, in_range_pct >= 100, in_range_pct))
+        task_results.append((task, in_range_pct >= 90, in_range_pct))
 
 
         print(f"Задание {idx} ({start:.1f}–{end:.1f} с): цель = {low + PITCH_TOLERANCE:.1f} Гц ±{PITCH_TOLERANCE}")

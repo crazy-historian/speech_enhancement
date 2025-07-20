@@ -14,10 +14,10 @@
         },
         {
             "name": "Задание 2",
-            "duration": 60.0,
-            "wave_interval": 3.0,
+            "duration": 120.0,
+            "wave_interval": 5.0,
             "wave_size": 4,
-            "syllable_interval": 0.5,
+            "syllable_interval": 0.25,
             "text": "МА"
         }
     ]

@@ -459,7 +459,7 @@ class SyllableConfigWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Настройка игры на слоги")
-        self.setMinimumWidth(700)
+        self.setMinimumWidth(400)
 
         self.stacked = QStackedWidget()
         self.audio_tab = AudioSettingsTab(go_back=self.show_main)

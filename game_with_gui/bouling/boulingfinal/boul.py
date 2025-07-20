@@ -222,11 +222,11 @@ class VoiceBowlingGame(arcade.Window):
         if self.motion_start_time and not self.timer_frozen:
             self.movement_timer = time.time() - self.motion_start_time
 
-        arcade.draw_text(f"Ball time: {self.movement_timer:.2f} s",
-                         SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30,
-                         arcade.color.BLACK, 20, anchor_x="center")
+        # arcade.draw_text(f"Ball time: {self.movement_timer:.2f} s",
+        #                  SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30,
+        #                  arcade.color.BLACK, 20, anchor_x="center")
 
-        arcade.draw_text("Press R to restart", SCREEN_WIDTH - 180, 10, arcade.color.DARK_GRAY, 14)
+        # arcade.draw_text("Press R to restart", SCREEN_WIDTH - 180, 10, arcade.color.DARK_GRAY, 14)
 
     def on_update(self, delta_time: float):
         if self.failed_attempt:

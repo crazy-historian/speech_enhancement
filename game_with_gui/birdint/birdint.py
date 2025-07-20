@@ -13,6 +13,7 @@ import matplotlib.patches as patches
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox
 from guiconfig import select_task_gui
+from collections import deque
 
 
 def run_game_with_task(task):
@@ -38,7 +39,7 @@ def run_game_with_task(task):
     # логика сглаживания
     if task.get("smooth", True):
         SMOOTHING_ALPHA = 0.6
-        RESPONSE_FACTOR = 0.9
+        RESPONSE_FACTOR = 0.4
     else:
         SMOOTHING_ALPHA = 0.25
         RESPONSE_FACTOR = 0.7
@@ -51,11 +52,11 @@ def run_game_with_task(task):
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 660
-SCREEN_TITLE = "Voice-Controlled Arcade Game"
+SCREEN_TITLE = "Громик/Пичик"
 
 
 SCROLL_SPEED = 400
-GROUND_Y = 110
+GROUND_Y = 90
 AIR_Y = 450
 
 
@@ -63,7 +64,7 @@ INTENSITY_MIN = 20
 INTENSITY_MAX = 90
 
 BLOCKSIZE = 1024
-SILENCE_THRESHOLD_DB = 40.0
+SILENCE_THRESHOLD_DB = 53.0
 BLOCKS_TO_SILENT = 4
 
 
@@ -73,11 +74,14 @@ ARTIFACT_SCORE = 10
 TEXTURE_ONE = "berries.png"
 
 
-def analyze_voice():
+def analyze_voice(window_size=3):
     from guiconfig import load_config
     config = load_config()
     device_index = config.get("mic_device_index")
     print(f"device_index: {device_index}")
+
+    # Очередь для хранения последних N значений интенсивности
+    smoothing_window = deque(maxlen=window_size)
 
     with InputStream(samplerate=16000, blocksize=BLOCKSIZE, channels=1, sampwidth=2, device=device_index) as stream:
         stream.set_methods(UnpackRawInFloat32())
@@ -92,7 +96,10 @@ def analyze_voice():
             intensity_obj = sound.to_intensity()
             intensity_values = intensity_obj.values.T.flatten()
             avg_intensity = np.mean(intensity_values) if len(intensity_values) > 0 else 0
-            yield avg_intensity
+
+            smoothing_window.append(avg_intensity)
+            smoothed = np.mean(smoothing_window)
+            yield smoothed
 
 
 class PlayerCharacter(arcade.Sprite):
@@ -117,6 +124,7 @@ class PlayerCharacter(arcade.Sprite):
 
     def update_position(self, intensity: float):
             
+        
             normalized = (intensity - INTENSITY_MIN) / (INTENSITY_MAX - INTENSITY_MIN)
             normalized = max(0.0, min(normalized, 1.0))  # ограничение в пределах 0–1
         
@@ -298,8 +306,8 @@ class VoiceArcadeGame(arcade.Window):
         # настройка сглаживания
         global SMOOTHING_ALPHA, RESPONSE_FACTOR
         if task.get("smooth", True):
-            SMOOTHING_ALPHA = 0.6
-            RESPONSE_FACTOR = 0.9
+            SMOOTHING_ALPHA = 0.9
+            RESPONSE_FACTOR = 0.2
         else:
             SMOOTHING_ALPHA = 0.25
             RESPONSE_FACTOR = 0.7
@@ -320,6 +328,8 @@ class VoiceArcadeGame(arcade.Window):
         self.current_intensity = 0
         self.voice_thread_running = True 
         threading.Thread(target=self.voice_loop, daemon=True).start()
+        threading.Timer(GAME_DURATION + 0.5, self.plot_intensity_graph).start()
+
     
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.ESCAPE:
@@ -347,10 +357,43 @@ class VoiceArcadeGame(arcade.Window):
             if not self.voice_thread_running:
                 break
             self.current_intensity = intensity
+            self.intensity_history.append(intensity)
         self.voice_stream_ended = True
     def on_close(self):
         self.voice_thread_running = False
         super().on_close()
+    
+    def plot_intensity_graph(self):
+        if not self.intensity_history:
+            print("Нет данных для графика.")
+            return
+
+        # Используем реальный шаг времени по blocksize
+        history = self.intensity_history.copy()
+        timestamps = np.arange(len(history)) * self.block_interval
+
+        # Подстраховка: обрезаем до совпадающей длины
+        min_len = min(len(timestamps), len(history))
+        timestamps = timestamps[:min_len]
+        history = history[:min_len]
+
+        # Рисуем график
+        plt.figure(figsize=(10, 4))
+        plt.plot(timestamps, history, color='orange', label='Интенсивность')
+        plt.title("График интенсивности за всё время игры")
+        plt.xlabel("Время (секунды)")
+        plt.ylabel("Интенсивность, dB")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+
+        # Сохраняем с timestamp в имя
+        filename = f"intensity_{time.strftime('%Y%m%d_%H%M%S')}.png"
+        plt.savefig(filename)
+        plt.close()
+
+        # Открываем через системную утилиту (macOS)
+        os.system(f"open {filename}")
 
     def spawn_artifacts(self):
         now = time.time()
@@ -389,8 +432,8 @@ class VoiceArcadeGame(arcade.Window):
             for letter in group.letters:
                 letter.draw()
         self.player.draw()
-        self.draw_intensity_scale()
-        arcade.draw_text(f"Score: {self.score}", 10, SCREEN_HEIGHT - 30, arcade.color.BLACK, 20)
+        #self.draw_intensity_scale()
+        #arcade.draw_text(f"Score: {self.score}", 10, SCREEN_HEIGHT - 30, arcade.color.BLACK, 20)
         if self.game_over and self.final_text:
             arcade.draw_text(
                 self.final_text,
@@ -449,10 +492,12 @@ class VoiceArcadeGame(arcade.Window):
 
         if self.voice_stream_ended and not self.in_wave and time.time() - self.time_last_wave > chastota:
             self.game_over = True
+            self.plot_after_exit()
+            arcade.exit()  # корректное завершение окна
             max_score = self.total_artifacts * ARTIFACT_SCORE
-            self.rating = round((self.score / max_score) * 5) if max_score > 0 else 0
-            self.rating = max(1, min(self.rating, 5))
-            self.final_text = f"Игра окончена!\nВы набрали {self.score} из {max_score} очков."
+            #self.rating = round((self.score / max_score) * 5) if max_score > 0 else 0
+            #self.rating = max(1, min(self.rating, 5))
+            #self.final_text = f"Игра окончена!\nВы набрали {self.score} из {max_score} очков."
 
             
     

@@ -16,17 +16,17 @@
     },
     {
         "name": "Задание 2",
-        "quiet": 40,
+        "quiet": 55,
         "norm": 65,
         "loud": 70,
-        "gen_quiet": false,
-        "gen_norm": true,
+        "gen_quiet": true,
+        "gen_norm": false,
         "gen_loud": false,
-        "frequency": 3.0,
-        "duration": 40,
+        "frequency": 4.0,
+        "duration": 20,
         "artifacts_count": 4,
-        "artifact_interval": 0.5,
-        "text": "ДА",
+        "artifact_interval": 0.4,
+        "text": "ПА",
         "smooth": true
     }
 ]

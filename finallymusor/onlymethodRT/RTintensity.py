@@ -7,7 +7,7 @@ from audiochains.block_methods import UnpackRawInFloat32
 
 BLOCKSIZE = 1024
 SILENCE_THRESHOLD_DB = 40.0
-GAME_DURATION = 60  # Длительность измерения интенсивности
+GAME_DURATION = 10  # Длительность измерения интенсивности
 
 def analyze_and_plot_voice_intensity():
     """
@@ -19,7 +19,7 @@ def analyze_and_plot_voice_intensity():
         fig, ax = plt.subplots()
         ax.set_xlabel("Время (с)")
         ax.set_ylabel("Интенсивность (dB)")
-        ax.set_title("График интенсивности в реальном времени")
+        ax.set_title("График интенсивности")
         ax.set_xlim(0, GAME_DURATION)
         ax.set_ylim(0, 100)
         ax.grid()
@@ -46,9 +46,14 @@ def analyze_and_plot_voice_intensity():
             sound = parselmouth.Sound(values=signal, sampling_frequency=stream.samplerate)
 
             # Извлечение интенсивности
-            intensity_obj = sound.to_intensity()
+            intensity_obj = sound.to_intensity(subtract_mean=False)
             intensity_values = intensity_obj.values.T.flatten()
             avg_intensity = np.mean(intensity_values) if len(intensity_values) > 0 else 0
+            print(intensity_obj)
+            for t, val in zip(intensity_obj.xs().flatten(), intensity_values):
+                print(f"t={t:.3f}s: {val:.2f} dB")
+            print("Intensity values:", np.round(intensity_values, 2))
+            print("Average intensity:", round(avg_intensity, 2))
 
             # Добавление новых данных
             times.append(current_time)

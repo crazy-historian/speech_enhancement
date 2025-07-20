@@ -82,7 +82,7 @@ def main():
             ax.set_xlabel("Время (с)")
             ax.set_ylabel("Частота (Гц)")
             ax.set_title("График основного тона в реальном времени")
-            ax.set_ylim(PITCH_FLOOR, PITCH_CEILING)
+            ax.set_ylim(100, 160)
             ax.grid()
             ax.plot(times, pitches, color="green", label="Частота (Гц)")
             plt.legend()
