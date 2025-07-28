@@ -1,0 +1,32 @@
+{
+  "name": "andrewtest",
+  "settings": {
+    "pitch_ranges": {
+      "low": [
+        100,
+        140
+      ],
+      "normal": [
+        140,
+        200
+      ],
+      "high": [
+        250,
+        300
+      ]
+    },
+    "volume_threshold_db": 50.0,
+    "base_duration": 4.0,
+    "max_out_of_zone": 0.5,
+    "blocks_to_silent": 2
+  },
+  "tasks": [
+    {
+      "name": "ЗаданиеНаТестику",
+      "frequency": "low",
+      "duration": 4.0,
+      "max_out_of_zone": 0.5,
+      "description": ""
+    }
+  ]
+}

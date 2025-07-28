@@ -1,0 +1,31 @@
+# ------------------------- Глобальные настройки -------------------------
+SCREEN_WIDTH = 1280 
+SCREEN_HEIGHT = 660
+SCREEN_TITLE = "Слоготакт"
+
+SCROLL_SPEED = 5
+COLLECTION_TIME = 3
+
+GROUND_Y = 100
+AIR_Y = 300
+
+CURRENT_TASK = "АА"
+#дается эталонный вариант слитности, раздельности
+
+UP_FORCE = 50
+GRAVITY_FORCE = 30
+MAX_UP_SPEED = 100
+MAX_DOWN_SPEED = 100
+
+WAVE_INTERVAL = 3
+WAVE_SIZE = 3
+ALPHABET_FOLDER = "alphabet/"
+
+GAME_DURATION = 60
+
+BLOCKSIZE = 1024
+PITCH_FLOOR = 100
+PITCH_CEILING = 600
+SILENCE_THRESHOLD_DB = 40.0
+VOICING_THRESHOLD = 0.6
+#BLOCKS_TO_SILENT = 1

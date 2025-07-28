@@ -1,0 +1,29 @@
+SCREEN_WIDTH = 1276
+SCREEN_HEIGHT = 660
+SCREEN_TITLE = "Громик/Пичик"
+
+SCROLL_SPEED = 10
+GROUND_Y = 110
+AIR_Y = 600
+
+PITCH_FLOOR = 100
+PITCH_CEILING = 300
+
+BLOCKSIZE = 1024
+SILENCE_THRESHOLD_DB = 50.0
+BLOCKS_TO_SILENT = 3
+
+SMOOTHING_ALPHA = 0.6
+RESPONSE_FACTOR = 0.9
+
+ARTIFACT_SCORE = 10
+
+TEXTURE_ONE = "berries.png"
+
+GAME_DURATION = 60
+chastota = 6.0
+ARTIFACTS_IN_WAVE = 5.0
+ARTIFACT_INTERVAL = 0.2
+selected_ranges = [(100, 140)]
+CURRENT_TASK_TEXT = "ДА"
+mic_device_index = None  # сюда будем подставлять устройство из конфига
