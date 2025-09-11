@@ -1,10 +1,18 @@
 import arcade
 from pathlib import Path
-from game.settings import PITCH_FLOOR, PITCH_CEILING, AIR_Y, GROUND_Y, SCREEN_WIDTH, SCROLL_SPEED
+from .settings import PITCH_FLOOR, PITCH_CEILING, AIR_Y, GROUND_Y, SCREEN_WIDTH, SCROLL_SPEED
 
 
 class ArtifactGroup:
     def __init__(self, task_text, pitch):
+        """
+        Создает из букв спрайты на нужной высоте, относительно pitch
+
+        Args: 
+            task_text (string): Игровое задание для произнесения
+            pitch (float): Частота основного тона
+        """
+
         self.letters = []
         spacing = 5  
         font_path = str(Path("games/pichik/components/shrift_mult.otf").absolute())
@@ -34,10 +42,19 @@ class ArtifactGroup:
         self.collected = False
 
     def add_to_list(self, sprite_list):
+        """
+        Функция добавляет буквы в лист артефактов группы (одна группа = одна итерация слогов для произнесения) задания
+        """
+
         for letter in self.letters:
             sprite_list.append(letter)
 
     def update_and_check(self, player, delta_time):
+        """
+        Функция обновляет состояние группы артефактов и проверяет, собрал ли персонаж артефакт (буквы)
+        """
+
+
         if self.collected:
             return False
         all_collected = True

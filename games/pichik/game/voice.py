@@ -6,11 +6,11 @@ from collections import deque
 
 from audiochains.streams import InputStream
 from audiochains.block_methods import UnpackRawInFloat32
-from game.settings import BLOCKSIZE, GAME_DURATION, PITCH_FLOOR, PITCH_CEILING, BLOCKS_TO_SILENT, SILENCE_THRESHOLD_DB
-from guipichik import load_pitch_config
+from . import settings as s
+from ..guui.profiles import get_audio
 
 def analyze_voice(window_size=3):
-    config = load_pitch_config()
+    config = get_audio(s.profile_name)
     device_index = config.get("mic_device_index")
     print(f"device_index: {device_index}")
 
@@ -20,7 +20,7 @@ def analyze_voice(window_size=3):
     
     with InputStream(
         samplerate=16000,
-        blocksize=BLOCKSIZE,
+        blocksize=s.BLOCKSIZE,
         channels=1,
         sampwidth=2,
         device=device_index
@@ -31,8 +31,8 @@ def analyze_voice(window_size=3):
         last_valid_pitch = None  
         smoothing_window = deque(maxlen=window_size)  # окно сглаживания
 
-        while time.time() - start_time < GAME_DURATION:
-            raw_data = stream.read(BLOCKSIZE)
+        while True:
+            raw_data = stream.read(s.BLOCKSIZE)
             if not raw_data:
                 continue
 
@@ -45,15 +45,15 @@ def analyze_voice(window_size=3):
 
             pitch_obj = sound.to_pitch_ac(
                 time_step=0.01,
-                pitch_floor=PITCH_FLOOR,
-                pitch_ceiling=PITCH_CEILING,
+                pitch_floor=s.PITCH_FLOOR,
+                pitch_ceiling=s.PITCH_CEILING,
                 voicing_threshold=0.6
             )
             pitch_values = pitch_obj.selected_array["frequency"]
             pitch_values[(pitch_values == 0) | (pitch_values > 600)] = np.nan
             avg_pitch = np.nanmean(pitch_values) if np.any(~np.isnan(pitch_values)) else last_valid_pitch
 
-            above_silence_threshold = avg_intensity > SILENCE_THRESHOLD_DB
+            above_silence_threshold = avg_intensity > s.SILENCE_THRESHOLD_DB
             valid_pitch = avg_pitch is not None
 
             if above_silence_threshold and valid_pitch:
@@ -63,7 +63,7 @@ def analyze_voice(window_size=3):
                 yield np.mean(smoothing_window)
             else:
                 silent_counter += 1
-                if silent_counter < BLOCKS_TO_SILENT and last_valid_pitch is not None:
+                if silent_counter < s.BLOCKS_TO_SILENT and last_valid_pitch is not None:
                     smoothing_window.append(last_valid_pitch)
                     yield np.mean(smoothing_window)
                 else:

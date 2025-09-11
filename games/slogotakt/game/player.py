@@ -1,5 +1,6 @@
 import arcade
-from game.settings import GROUND_Y, UP_FORCE, MAX_UP_SPEED, MAX_DOWN_SPEED, GRAVITY_FORCE, AIR_Y
+from . import settings as s
+
 
 def load_texture_pair(filename):
     return [
@@ -29,42 +30,42 @@ class PlayerCharacter(arcade.Sprite):
 
         self.texture = self.idle_texture_pair[self.character_face_direction]
         self.center_x = 150
-        self.center_y = GROUND_Y
+        self.center_y = s.GROUND_Y
 
         self.hit_box = self.texture.hit_box_points
         self.velocity_y = 0.0
 
     def update_physics(self, is_voiced: bool):
         if is_voiced:
-            self.velocity_y += UP_FORCE
-            if self.velocity_y > MAX_UP_SPEED:
-                self.velocity_y = MAX_UP_SPEED
+            self.velocity_y += s.UP_FORCE
+            if self.velocity_y > s.MAX_UP_SPEED:
+                self.velocity_y = s.MAX_UP_SPEED
         else:
-            self.velocity_y -= GRAVITY_FORCE
-            if self.velocity_y < -MAX_DOWN_SPEED:
-                self.velocity_y = -MAX_DOWN_SPEED
+            self.velocity_y -= s.GRAVITY_FORCE
+            if self.velocity_y < -s.MAX_DOWN_SPEED:
+                self.velocity_y = -s.MAX_DOWN_SPEED
 
         self.center_y += self.velocity_y
 
-        if self.center_y < GROUND_Y:
-            self.center_y = GROUND_Y
+        if self.center_y < s.GROUND_Y:
+            self.center_y = s.GROUND_Y
             self.velocity_y = 0
-        elif self.center_y > AIR_Y:
-            self.center_y = AIR_Y
+        elif self.center_y > s.AIR_Y:
+            self.center_y = s.AIR_Y
             self.velocity_y = 0
 
-    def update_animation(self, delta_time: float = 1/60):
+    def update_animation(self, delta_time: float = 1 / 60):
         self.animation_timer += delta_time
 
-        if self.center_y <= GROUND_Y + 0.1:
+        if self.center_y <= s.GROUND_Y + 0.1:
             if abs(self.velocity_y) < 0.1:
-                if self.animation_timer >= 0.1:  # каждые 0.1 секунды (10 кадров в секунду)
+                if self.animation_timer >= 0.1:
                     self.animation_timer = 0.0
                     self.cur_texture = (self.cur_texture + 1) % 8
                 self.texture = self.walk_textures[self.cur_texture][self.character_face_direction]
             else:
                 self.texture = self.walk_textures[self.cur_texture][self.character_face_direction]
-        elif self.center_y >= AIR_Y - 0.1:
+        elif self.center_y >= s.AIR_Y - 0.1:
             if abs(self.velocity_y) < 0.1:
                 self.texture = self.idle_texture_pair[self.character_face_direction]
             elif self.velocity_y > 0:
@@ -72,7 +73,4 @@ class PlayerCharacter(arcade.Sprite):
             else:
                 self.texture = self.fall_texture_pair[self.character_face_direction]
         else:
-            if self.velocity_y > 0:
-                self.texture = self.jump_texture_pair[self.character_face_direction]
-            else:
-                self.texture = self.fall_texture_pair[self.character_face_direction]
+            self.texture = self.jump_texture_pair[self.character_face_direction] if self.velocity_y > 0 else self.fall_texture_pair[self.character_face_direction]

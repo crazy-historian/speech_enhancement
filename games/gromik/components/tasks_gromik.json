@@ -28,5 +28,20 @@
         "artifact_interval": 0.4,
         "text": "ПА",
         "smooth": true
+    },
+    {
+        "name": "Задание 3",
+        "quiet": 40,
+        "norm": 60,
+        "loud": 65,
+        "gen_quiet": true,
+        "gen_norm": true,
+        "gen_loud": true,
+        "frequency": 6.0,
+        "duration": 60,
+        "artifacts_count": 5,
+        "artifact_interval": 0.2,
+        "text": "ДУМА",
+        "smooth": true
     }
 ]

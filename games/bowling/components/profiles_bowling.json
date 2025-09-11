@@ -1,0 +1,23 @@
+{
+    "profiles": [
+        {
+            "name": "Андрей",
+            "audio": {
+                "mic_device_index": 0,
+                "silence_threshold_db": 50.0
+            },
+            "tasks": [
+                {
+                    "name": "Задание 1",
+                    "duration": 3,
+                    "text": "МА"
+                },
+                {
+                    "name": "Задание 2",
+                    "duration": 2,
+                    "text": "ААА"
+                }
+            ]
+        }
+    ]
+}

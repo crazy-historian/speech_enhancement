@@ -1,7 +1,6 @@
 import time
 import arcade
-from game.settings import SCREEN_WIDTH, SCREEN_HEIGHT
-
+from . import settings as s
 
 class ScrollingBackground:
     """
@@ -43,10 +42,10 @@ class ScrollingBackground:
             # Куда должен попасть правый край bg_3
         desired_right_x = 100
         required_offset = self.scroll_speed * duration
-        start_x_bg3 = desired_right_x + required_offset - SCREEN_WIDTH
+        start_x_bg3 = desired_right_x + required_offset - s.SCREEN_WIDTH
 
         # Где сейчас заканчивается последний фон
-        right_edge = max(t["x"] + SCREEN_WIDTH for t in self.active)
+        right_edge = max(t["x"] + s.SCREEN_WIDTH for t in self.active)
 
         # 🔧 Добавим bg_2 до bg_3, если есть зазор
         while right_edge < start_x_bg3:
@@ -54,7 +53,7 @@ class ScrollingBackground:
                 "texture": self.textures[1],
                 "x": right_edge
             })
-            right_edge += SCREEN_WIDTH
+            right_edge += s.SCREEN_WIDTH
 
         # ✅ Вставляем bg_3
         self.active.append({
@@ -65,7 +64,7 @@ class ScrollingBackground:
         # ✅ И сразу за ним — bg_2, чтобы не было дыры после челленджа
         self.active.append({
             "texture": self.textures[1],
-            "x": start_x_bg3 + SCREEN_WIDTH
+            "x": start_x_bg3 + s.SCREEN_WIDTH
         })
 
     def update(self, delta_time, voice_active, pitch_in_range):
@@ -84,7 +83,7 @@ class ScrollingBackground:
             tex["x"] -= scroll_amount
 
         # Удаляем текстуры, которые ушли целиком за левую границу экрана
-        self.active = [t for t in self.active if t["x"] + SCREEN_WIDTH > 0]
+        self.active = [t for t in self.active if t["x"] + s.SCREEN_WIDTH > 0]
 
         # ---------------------------
         # --- Основной скроллинг
@@ -93,7 +92,7 @@ class ScrollingBackground:
         if not self.challenge_active and self.state != "start":
             # Если текстур меньше 2 (не хватает на покрытие экрана), добавим новую bg_2
             if len(self.active) < 2:
-                right_edge = max(t["x"] + SCREEN_WIDTH for t in self.active)
+                right_edge = max(t["x"] + s.SCREEN_WIDTH for t in self.active)
                 self.active.append({"texture": self.textures[1], "x": right_edge})
 
         # ---------------------------
@@ -102,7 +101,7 @@ class ScrollingBackground:
         if self.challenge_active and time.time() >= self.challenge_end_time:
             self.challenge_active = False
             self.state = "main"
-            right_edge = max(t["x"] + SCREEN_WIDTH for t in self.active)
+            right_edge = max(t["x"] + s.SCREEN_WIDTH for t in self.active)
             self.active.append({"texture": self.textures[1], "x": right_edge})
 
         # ---------------------------
@@ -111,15 +110,15 @@ class ScrollingBackground:
         if self.state == "start" and voice_active and pitch_in_range:
             self.state = "main"
             last_x = self.active[-1]["x"]
-            self.active.append({"texture": self.textures[1], "x": last_x + SCREEN_WIDTH})
+            self.active.append({"texture": self.textures[1], "x": last_x + s.SCREEN_WIDTH})
 
     def draw(self):
         # Рисуем каждую "полоску" фона так, чтобы её центр был по центру экрана по Y
         for tex in self.active:
             arcade.draw_texture_rectangle(
-                tex["x"] + SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2,
-                SCREEN_WIDTH,
-                SCREEN_HEIGHT,
+                tex["x"] + s.SCREEN_WIDTH // 2,
+                s.SCREEN_HEIGHT // 2,
+                s.SCREEN_WIDTH,
+                s.SCREEN_HEIGHT,
                 tex["texture"]
             )

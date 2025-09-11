@@ -1,7 +1,0 @@
-torch
-torchaudio
-onnxruntime
-matplotlib
-AMFM-decompy==1.0.11
-audiochains @ git+https://github.com/crazy-historian/audiochains.git
-silero_vad_simplified @ git+https://github.com/crazy-historian/silero-vad.git@refactoring

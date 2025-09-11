@@ -1,46 +1,53 @@
 import arcade
-from game.core_game import VoiceArcadeGame
-
+from .core_game import VoiceArcadeGame
+from . import settings as s
+from ..guui.profiles import load_profiles
 
 
 def run_pitch_game_with_task(task):
+    
     """
     Получает task-словарь из pitch_config.json, настраивает глобальные переменные,
     создаёт объект VoiceArcadeGame и запускает arcade.run().
     """
-    global GAME_DURATION, ARTIFACTS_IN_WAVE, ARTIFACT_INTERVAL
-    global chastota, selected_ranges, CURRENT_TASK_TEXT
-    global mic_device_index, SMOOTHING_ALPHA, RESPONSE_FACTOR
+    
 
     # Распакуем task
-    GAME_DURATION = task.get("duration", 60)
-    ARTIFACTS_IN_WAVE = float(task.get("artifacts_count", 5))
-    ARTIFACT_INTERVAL = float(task.get("artifact_interval", 0.2))
-    chastota = float(task.get("frequency", 6))
-    CURRENT_TASK_TEXT = task.get("text", "ДА")
+    s.GAME_DURATION = task.get("duration", 60)
+    s.ARTIFACTS_IN_WAVE = float(task.get("artifacts_count", 5))
+    s.ARTIFACT_INTERVAL = float(task.get("artifact_interval", 0.2))
+    s.chastota = float(task.get("frequency", 6))
+    s.CURRENT_TASK_TEXT = task.get("text", "ДА")
+    s.SILENCE_THRESHOLD_DB = task.get("silence_threshold_db", 50.0)
+    s.profile_name = task.get("profile_name", None)
+    if not s.profile_name:
+        data = load_profiles()
+        if data.get("profiles"):
+            s.profile_name = data["profiles"][0].get("name")
+
 
     # Включаем диапазоны (quiet/norm/loud) в selected_ranges
-    selected_ranges = []
+    s.selected_ranges = []
     if task.get("gen_quiet"):
-        selected_ranges.append((task["quiet"], task["quiet"]))
+        s.selected_ranges.append((task["quiet"], task["quiet"]))
     if task.get("gen_norm"):
-        selected_ranges.append((task["norm"], task["norm"]))
+        s.selected_ranges.append((task["norm"], task["norm"]))
     if task.get("gen_loud"):
-        selected_ranges.append((task["loud"], task["loud"]))
+        s.selected_ranges.append((task["loud"], task["loud"]))
     # fallback
-    if not selected_ranges:
-        selected_ranges = [(100, 120)]
+    if not s.selected_ranges:
+        s.selected_ranges = [(100, 120)]
 
     # Сглаживание
     if task.get("smooth", True):
-        SMOOTHING_ALPHA = 0.6
-        RESPONSE_FACTOR = 0.9
+        s.SMOOTHING_ALPHA = 0.6
+        s.RESPONSE_FACTOR = 0.9
     else:
-        SMOOTHING_ALPHA = 0.25
-        RESPONSE_FACTOR = 0.7
+        s.SMOOTHING_ALPHA = 0.25
+        s.RESPONSE_FACTOR = 0.7
 
     # Сохраним device_index, если есть
-    mic_device_index = task.get("mic_device_index", None)
+    s.mic_device_index = task.get("mic_device_index", None)
 
     # Запуск
     game = VoiceArcadeGame()

@@ -27,3 +27,4 @@ ARTIFACT_INTERVAL = 0.2
 selected_ranges = [(100, 140)]
 CURRENT_TASK_TEXT = "ДА"
 mic_device_index = None  # сюда будем подставлять устройство из конфига
+profile_name=None

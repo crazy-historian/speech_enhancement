@@ -1,0 +1,52 @@
+{
+    "profiles": [
+        {
+            "name": "Андрей",
+            "audio": {
+                "mic_device_index": 1,
+                "silence_threshold_db": 54.0
+            },
+            "settings": {
+                "pitch_ranges": {
+                    "low": [
+                        150,
+                        199
+                    ],
+                    "normal": [
+                        200,
+                        250
+                    ],
+                    "high": [
+                        251,
+                        300
+                    ]
+                },
+                "base_duration": 4.0,
+                "max_out_of_zone": 0.5,
+                "blocks_to_silent": 2
+            },
+            "tasks": [
+                {
+                    "name": "Задание 1",
+                    "frequency": [
+                        100,
+                        120
+                    ],
+                    "duration": 4.0,
+                    "max_out_of_zone": 0.5,
+                    "description": "ПА"
+                },
+                {
+                    "name": "Задание 2",
+                    "frequency": [
+                        120,
+                        150
+                    ],
+                    "duration": 5.0,
+                    "max_out_of_zone": 0.6,
+                    "description": "МА"
+                }
+            ]
+        }
+    ]
+}

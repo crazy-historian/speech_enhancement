@@ -45,6 +45,36 @@
             "artifact_interval": 0.2,
             "text": "СА",
             "smooth": true
+        },
+        {
+            "name": "Такое вот задание",
+            "quiet": 120,
+            "norm": 180,
+            "loud": 240,
+            "gen_quiet": false,
+            "gen_norm": true,
+            "gen_loud": true,
+            "frequency": 6.0,
+            "duration": 60,
+            "artifacts_count": 5,
+            "artifact_interval": 0.2,
+            "text": "ДА",
+            "smooth": true
+        },
+        {
+            "name": "Задание не пустое",
+            "quiet": 120,
+            "norm": 180,
+            "loud": 240,
+            "gen_quiet": false,
+            "gen_norm": true,
+            "gen_loud": true,
+            "frequency": 6.0,
+            "duration": 10,
+            "artifacts_count": 5,
+            "artifact_interval": 0.2,
+            "text": "МА",
+            "smooth": false
         }
     ]
 }

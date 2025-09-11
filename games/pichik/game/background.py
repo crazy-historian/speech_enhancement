@@ -1,5 +1,5 @@
 import arcade
-from game.settings import SCREEN_WIDTH, SCREEN_HEIGHT
+from .settings import SCREEN_WIDTH, SCREEN_HEIGHT
 
 class ScrollingBackground:
     def __init__(self, texture_path, speed):
@@ -23,11 +23,19 @@ class ScrollingBackground:
         self.textures[1].center_y = SCREEN_HEIGHT // 2
 
     def update(self):
+        """
+        Сдвигает поочередно спрайты фона влево, создавая бесконечный скроллирующийся фон
+        """
+
         for sprite in self.textures:
             sprite.center_x -= self.speed
             if sprite.right < 0:
                 sprite.center_x += SCREEN_WIDTH * 2
 
     def draw(self):
+        """
+        Поочередно отрисовывает спрайты фона
+        """
+
         for sprite in self.textures:
             sprite.draw()

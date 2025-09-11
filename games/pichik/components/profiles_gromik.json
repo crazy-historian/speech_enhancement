@@ -1,0 +1,45 @@
+{
+    "profiles": [
+        {
+            "name": "Андрей",
+            "audio": {
+                "mic_device_index": 1,
+                "silence_threshold_db": 50.0
+            },
+            "tasks": [
+                {
+                    "name": "Задание 1",
+                    "quiet": 40.0,
+                    "norm": 50.0,
+                    "loud": 60.0,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "ДА",
+                    "smooth": true,
+                    "metric": "intensity_db"
+                },
+                {
+                    "name": "",
+                    "quiet": 55.0,
+                    "norm": 62.3,
+                    "loud": 80.0,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "ДА",
+                    "smooth": true,
+                    "metric": "intensity_db"
+                }
+            ]
+        }
+    ]
+}

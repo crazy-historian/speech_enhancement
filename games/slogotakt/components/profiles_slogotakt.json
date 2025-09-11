@@ -1,0 +1,29 @@
+{
+    "profiles": [
+        {
+            "name": "Андрей",
+            "audio": {
+                "mic_device_index": 1,
+                "silence_threshold_db": 50.0
+            },
+            "tasks": [
+                {
+                    "name": "Задание 1",
+                    "duration": 60.0,
+                    "wave_interval": 3.0,
+                    "wave_size": 3,
+                    "syllable_interval": 0.4,
+                    "text": "МА"
+                },
+                {
+                    "name": "Задание 2",
+                    "duration": 60.0,
+                    "wave_interval": 2.0,
+                    "wave_size": 4,
+                    "syllable_interval": 0.4,
+                    "text": "ДА"
+                }
+            ]
+        }
+    ]
+}

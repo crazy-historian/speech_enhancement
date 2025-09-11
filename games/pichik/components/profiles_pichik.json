@@ -1,0 +1,142 @@
+{
+    "profiles": [
+        {
+            "name": "Импортировано из старого конфига",
+            "audio": {
+                "mic_device_index": 0,
+                "silence_threshold_db": 50.0
+            },
+            "tasks": [
+                {
+                    "name": "Задание 1",
+                    "quiet": 120,
+                    "norm": 150,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": false,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.4,
+                    "text": "ПА",
+                    "smooth": true
+                },
+                {
+                    "name": "",
+                    "quiet": 172,
+                    "norm": 180,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "ДА",
+                    "smooth": true
+                },
+                {
+                    "name": "Задание 2",
+                    "quiet": 140,
+                    "norm": 180,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": false,
+                    "frequency": 4.0,
+                    "duration": 40,
+                    "artifacts_count": 4,
+                    "artifact_interval": 0.2,
+                    "text": "СА",
+                    "smooth": true
+                },
+                {
+                    "name": "Такое вот задание",
+                    "quiet": 120,
+                    "norm": 180,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "МААМ",
+                    "smooth": true
+                },
+                {
+                    "name": "Задание не пустое",
+                    "quiet": 120,
+                    "norm": 180,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 10,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "МА",
+                    "smooth": false
+                }
+            ]
+        },
+        {
+            "name": "Евгений",
+            "audio": {
+                "mic_device_index": 1,
+                "silence_threshold_db": 50.0
+            },
+            "tasks": [
+                {
+                    "name": "Задание 1",
+                    "quiet": 120,
+                    "norm": 147,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "МА",
+                    "smooth": true
+                },
+                {
+                    "name": "Задание 2",
+                    "quiet": 120,
+                    "norm": 180,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "ДА",
+                    "smooth": true
+                },
+                {
+                    "name": "Задание 3",
+                    "quiet": 120,
+                    "norm": 180,
+                    "loud": 240,
+                    "gen_quiet": false,
+                    "gen_norm": true,
+                    "gen_loud": true,
+                    "frequency": 6.0,
+                    "duration": 60,
+                    "artifacts_count": 5,
+                    "artifact_interval": 0.2,
+                    "text": "ДАДА",
+                    "smooth": true
+                }
+            ]
+        }
+    ]
+}
