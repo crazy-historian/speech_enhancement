@@ -3,7 +3,7 @@
         {
             "name": "Импортировано из старого конфига",
             "audio": {
-                "mic_device_index": 0,
+                "mic_device_index": 1,
                 "silence_threshold_db": 50.0
             },
             "tasks": [
